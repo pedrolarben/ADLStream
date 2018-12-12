@@ -203,11 +203,9 @@ def write_results_file(consumer, index):
     file_path = os.path.join(consumer.get_results_path(), 'keras_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-    print("Columns" + str(consumer.get_columns()))
     history_data = consumer.get_history()['data']
     history_data.columns = consumer.get_columns()
     history_data.to_csv(os.path.join(file_path, 'p' + str(index) + 'data.csv'), index=False)
-    print(consumer.get_history()['metrics'].columns)
     consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'p' + str(index) + '_metrics.csv'),
                                              columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
                                                       'recall', 'f1', 'fbeta',
@@ -343,7 +341,7 @@ def DNN(index, consumer, lock_messages, lock_train):
             # ToDo: what if time_out is not True (wait? continue asking?)
             if not consumer.is_time_out():
                 print("    " + str(index) + ": waiting feeder")
-                time.sleep(0.2)
+                time.sleep(0.25)
 
         else:
             _ = record.pop('classes', None)
@@ -410,7 +408,6 @@ def buffer_feeder(consumer, lock):
             print(traceback.format_exc())
 
         if len(new_batch) == batch_size:
-            len_buffer = consumer.get_buffer_len()
             with lock:
                 consumer.add(new_batch)
                 len_buffer = consumer.get_buffer_len()
