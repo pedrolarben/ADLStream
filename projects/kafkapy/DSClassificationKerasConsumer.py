@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--output_path",
                         help="Directory path where results will be stored.",
-                        default='/home/pedrolarben/datastream/dcos/volume0/aarcos/RES2/DSClassificationResults_keras')
+                        default='./DSClassificationResults/DSClassificationResults_keras')
 
 
     parser.add_argument("--from_beginning",
@@ -261,7 +261,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--topic",
                         help="Kafka topic name",
-                        default='streams_classification')
+                        default='streams_breast')
 
     parser.add_argument("--batch_size",
                         help="Chunk size",

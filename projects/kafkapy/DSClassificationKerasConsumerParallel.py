@@ -15,7 +15,7 @@ import pandas as pd
 class Consumer:
 
     def __init__(self, batch_size=10, num_batches_fed=40, topic='', results_path='./', bootstrap_servers=None,
-                 from_beginning=False):
+                 from_beginning=False, debug=True):
         self.batch_size = batch_size
         # self.num_batches_fed = num_batches_fed
         self.topic = topic
@@ -23,6 +23,7 @@ class Consumer:
         self.results_path = os.path.join(results_path, topic)
         self.bootstrap_servers = bootstrap_servers
         self.from_beginning = from_beginning
+        self.debug = debug
         self.buffer = []
         self.time_out = False
         self.history = {self.data_set_name: {
@@ -51,7 +52,7 @@ class Consumer:
         if len(self.buffer) == 0:
             return None
         res = self.buffer[0]
-        del (self.buffer[0])
+        self.buffer.pop(0)
         self.count = self.count + 1
         return res
 
@@ -73,6 +74,9 @@ class Consumer:
     def get_from_begining(self):
         return self.from_beginning
 
+    def get_debug(self):
+        return self.debug
+
     # def get_num_batches_fed(self):
     #     return self.num_batches_fed
 
@@ -87,7 +91,8 @@ class Consumer:
 
     def append_history(self, k, v):
         if k == 'metrics':
-            self.history[self.data_set_name]['metrics'] = self.history[self.data_set_name]['metrics'].append(v, ignore_index=True)
+            self.history[self.data_set_name]['metrics'] = self.history[self.data_set_name]['metrics'].append(v,
+                                                                                                             ignore_index=True)
         elif k == 'data':
             self.history[self.data_set_name][k] = pd.concat((self.history[self.data_set_name][k], v), ignore_index=True)
         else:
@@ -158,7 +163,7 @@ def read_message(consumer):
 
 
 # Save Metrics
-def save_history(consumer, x, y, y_pred, test_time):
+def save_history(consumer, x, y, y_pred, test_time, train_time):
     y_pred = np.argmax(y_pred, axis=1)
     y = np.argmax(y, axis=1)
 
@@ -167,7 +172,6 @@ def save_history(consumer, x, y, y_pred, test_time):
         x = x.reshape(x.shape[0], -1)
 
     records = pd.DataFrame(np.hstack((x, y.reshape(-1, 1), y_pred.reshape(-1, 1))))
-    # history[clf_name]['data'] = pd.concat((history[clf_name]['data'], records), ignore_index=True)
     consumer.append_history('data', records)
 
     prec, recall, fbeta, support = metrics.precision_recall_fscore_support(y, y_pred, average=consumer.get_average())
@@ -191,7 +195,7 @@ def save_history(consumer, x, y, y_pred, test_time):
         'f1': f1_score,
         'fbeta': fbeta,
         'accuracy': accuracy,
-        'train_time': 0,
+        'train_time': train_time,
         'test_time': test_time
     })
     # history[clf_name]['metrics'] = history[clf_name]['metrics'].append(metrics_record, ignore_index=True)
@@ -199,14 +203,14 @@ def save_history(consumer, x, y, y_pred, test_time):
 
 
 # Create results files
-def write_results_file(consumer, index):
+def write_results_file(consumer):
     file_path = os.path.join(consumer.get_results_path(), 'keras_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     history_data = consumer.get_history()['data']
     history_data.columns = consumer.get_columns()
-    history_data.to_csv(os.path.join(file_path, 'p' + str(index) + 'data.csv'), index=False)
-    consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'p' + str(index) + '_metrics.csv'),
+    history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
+    consumer.get_history()['metrics'].to_csv(os.path.join(file_path, '_metrics.csv'),
                                              columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
                                                       'recall', 'f1', 'fbeta',
                                                       'accuracy', 'train_time', 'test_time'),
@@ -233,7 +237,7 @@ def create_cnn_model(num_features, num_classes, loss_func):
     return model
 
 
-def train_model(consumer, model, x, y):
+def train_model(consumer, model, x, y, index=-1):
     # Load weights
     weights = consumer.get_weights()
     if weights:
@@ -241,7 +245,8 @@ def train_model(consumer, model, x, y):
 
     # Train
     train_time_start = time.time()
-    print("Training with the last window (process " + str(os.getpid()) + ")")
+    if consumer.get_debug():
+        print("P" + str(index) + ": Training window")
     model.fit(x, y, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
@@ -277,6 +282,11 @@ def DNN(index, consumer, lock_messages, lock_train):
     batch_size = consumer.get_batch_size()
     # num_batches_fed = consumer.get_num_batches_fed()
     batch_counter = 1
+    y_pred_history = None
+    x_pred_history = None
+    y_history = None
+    train_time, test_time = 0., 0.
+    count_messages = 0
 
     # Wait until first window available.
     while not consumer.get_initial_training_set():
@@ -316,7 +326,7 @@ def DNN(index, consumer, lock_messages, lock_train):
             # create model, train it and save the weights.
             model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
                                      consumer.get_loss_function())
-            train_model(consumer, model, x, y)
+            train_model(consumer, model, x, y, index)
 
             batch_counter += 1
 
@@ -330,17 +340,22 @@ def DNN(index, consumer, lock_messages, lock_train):
     # Main loop
     while True:
         with lock_messages:
+            count_messages += 1
             record = read_message(consumer)
         # if no message received...
         if record is None:
             # if timeout = true --> break
             if consumer.is_time_out():
-                print("    " + str(index) + ": Finish")
-                write_results_file(consumer, index)
+                if consumer.get_debug():
+                    print("P" + str(index) + ": Finish - " + str(count_messages) + " messages")
+                if y_pred_history is not None:
+                    save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, 0.)
+                write_results_file(consumer)
                 break
             # ToDo: what if time_out is not True (wait? continue asking?)
             if not consumer.is_time_out():
-                print("    " + str(index) + ": waiting feeder")
+                if consumer.get_debug():
+                    print("P" + str(index) + ": ... waiting feeder")
                 time.sleep(0.25)
 
         else:
@@ -355,31 +370,54 @@ def DNN(index, consumer, lock_messages, lock_train):
 
             # Classify
             x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
-            y_pred, test_time = classify(model, x_pred)
+            y_pred, test_time_aux = classify(model, x_pred)
+            test_time += test_time_aux
 
-            # Save metrics
-            save_history(consumer, x_pred, y, y_pred, test_time)
+            if y_pred_history is None:
+                y_pred_history = np.array(y_pred)
+            else:
+                y_pred_history = np.append(y_pred_history, y_pred, axis=0)
+
+            if x_pred_history is None:
+                x_pred_history = np.array(x_pred)
+            else:
+                x_pred_history = np.append(x_pred_history, x_pred, axis=0)
+
+            if y_history is None:
+                y_history = np.array(y)
+            else:
+                y_history = np.append(y_history, y, axis=0)
 
             # if window completed
             if len(window_x) % batch_size == 0:
                 # if training is not free => free up space in the window and continue classifying
-                if not consumer.is_available():
+                availabe = lock_train.acquire(False)
+                if not availabe:
                     window_y.pop(0)
                     window_x.pop(0)
+                    train_time = 0.
                 # Train window
                 else:
-                    with lock_train:
-                        consumer.set_available(False)
+                    x = np.expand_dims(np.array(window_x), axis=-1)
+                    window_y = list(np.array(window_y) - 1)
+                    y = to_categorical(window_y, consumer.get_num_classes())
 
-                        x = np.expand_dims(np.array(window_x), axis=-1)
-                        window_y = list(np.array(window_y) - 1)
-                        y = to_categorical(window_y, consumer.get_num_classes())
+                    train_time += train_model(consumer, model, x, y, index)
 
-                        train_model(consumer, model, x, y)
+                    window_y, window_x = [], []
 
-                        window_y, window_x = [], []
+                    consumer.set_available(True)
+                    lock_train.release()
 
-                        consumer.set_available(True)
+                # Save metrics
+
+            if len(y_pred_history) % batch_size == 0:
+                save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, train_time)
+                y_pred_history = None
+                x_pred_history = None
+                y_history = None
+                test_time = 0.
+                train_time = 0.
 
 
 # Buffer feeder
@@ -392,12 +430,15 @@ def buffer_feeder(consumer, lock):
                                    consumer_timeout_ms=5000,
                                    value_deserializer=lambda m: json.loads(m.decode('ascii')))
     new_batch = []
+    i = 0
     while True:
         try:
             message = next(kafka_consumer).value
+            i += 1
             new_batch.append(message)
         except StopIteration:
-            print("finish")
+            if consumer.get_debug():
+                print("BF: finish" + " - " + str(i) + " messages")
             if new_batch:
                 with lock:
                     consumer.add(new_batch)
@@ -413,8 +454,8 @@ def buffer_feeder(consumer, lock):
                 len_buffer = consumer.get_buffer_len()
             new_batch = []
             # Control buffer size
-            if len_buffer > 20 * batch_size:
-                time.sleep(len_buffer / (20 * batch_size))
+            if len_buffer > 100 * batch_size:
+                time.sleep(len_buffer / (100 * batch_size))
 
 
 def run(args):
@@ -424,12 +465,13 @@ def run(args):
     batch_size = args.batch_size
     # num_batches_fed = args.num_batches_fed
     output_path = args.output_path
+    debug = args.debug
 
     BaseManager.register('Consumer', Consumer)
     manager = BaseManager()
     manager.start()
     consumer = manager.Consumer(batch_size=batch_size, results_path=output_path, topic=topic,
-                                bootstrap_servers=bootstrap_servers, from_beginning=from_beginning)
+                                bootstrap_servers=bootstrap_servers, from_beginning=from_beginning, debug=debug)
     lock_messages = Lock()
     lock_train = Lock()
 
@@ -451,7 +493,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--output_path",
                         help="Directory path where results will be stored.",
-                        default='./DSClassificationResults/DSClassificationResults_keras')
+                        default='../../DSClassificationResults/DSClassificationResults_keras')
 
     parser.add_argument("--from_beginning",
                         help="Whether read messages from the beginning",
@@ -473,6 +515,10 @@ if __name__ == '__main__':
     # parser.add_argument("--num_batches_fed",
     #                     help="Number of batches fed to the training process",
     #                     default=40)
+
+    parser.add_argument("--debug",
+                        help="Whether print some log messages",
+                        default=True)
 
     args = parser.parse_args()
     run(args)
