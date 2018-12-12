@@ -1,0 +1,34 @@
+[2018-12-05 13:48:02,705] INFO Cleaner 0: Beginning cleaning of log __consumer_offsets-35. (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,706] INFO Cleaner 0: Building offset map for __consumer_offsets-35... (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,729] INFO Cleaner 0: Building offset map for log __consumer_offsets-35 for 1 segments in offset range [0, 15). (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,731] INFO Cleaner 0: Offset map for log __consumer_offsets-35 complete. (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,731] INFO Cleaner 0: Cleaning log __consumer_offsets-35 (cleaning prior to Wed Nov 28 13:39:07 CET 2018, discarding tombstones prior to Thu Jan 01 01:00:00 CET 1970)... (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,732] INFO Cleaner 0: Cleaning segment 0 in log __consumer_offsets-35 (largest timestamp Wed Nov 28 13:39:08 CET 2018) into 0, retaining deletes. (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,742] INFO Cleaner 0: Swapping in cleaned segment 0 for segment(s) 0 in log __consumer_offsets-35. (kafka.log.LogCleaner)
+[2018-12-05 13:48:02,743] INFO [kafka-log-cleaner-thread-0]: 
+	Log cleaner thread 0 cleaned log __consumer_offsets-35 (dirty section = [0, 0])
+	0.0 MB of log processed in 0.0 seconds (0.1 MB/sec).
+	Indexed 0.0 MB in 0.0 seconds (0.1 Mb/sec, 69.4% of total time)
+	Buffer utilization: 0.0%
+	Cleaned 0.0 MB in 0.0 seconds (0.3 Mb/sec, 30.6% of total time)
+	Start size: 0.0 MB (15 messages)
+	End size: 0.0 MB (5 messages)
+	81.4% size reduction (66.7% fewer messages)
+ (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,764] INFO Cleaner 0: Beginning cleaning of log __consumer_offsets-15. (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,764] INFO Cleaner 0: Building offset map for __consumer_offsets-15... (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,787] INFO Cleaner 0: Building offset map for log __consumer_offsets-15 for 1 segments in offset range [0, 16). (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,789] INFO Cleaner 0: Offset map for log __consumer_offsets-15 complete. (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,789] INFO Cleaner 0: Cleaning log __consumer_offsets-15 (cleaning prior to Tue Dec 04 13:32:32 CET 2018, discarding tombstones prior to Thu Jan 01 01:00:00 CET 1970)... (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,792] INFO Cleaner 0: Cleaning segment 0 in log __consumer_offsets-15 (largest timestamp Tue Dec 04 13:32:32 CET 2018) into 0, retaining deletes. (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,799] INFO Cleaner 0: Swapping in cleaned segment 0 for segment(s) 0 in log __consumer_offsets-15. (kafka.log.LogCleaner)
+[2018-12-05 13:52:17,800] INFO [kafka-log-cleaner-thread-0]: 
+	Log cleaner thread 0 cleaned log __consumer_offsets-15 (dirty section = [0, 0])
+	0.0 MB of log processed in 0.0 seconds (0.1 MB/sec).
+	Indexed 0.0 MB in 0.0 seconds (0.1 Mb/sec, 71.4% of total time)
+	Buffer utilization: 0.0%
+	Cleaned 0.0 MB in 0.0 seconds (0.3 Mb/sec, 28.6% of total time)
+	Start size: 0.0 MB (16 messages)
+	End size: 0.0 MB (5 messages)
+	83.2% size reduction (68.8% fewer messages)
+ (kafka.log.LogCleaner)

@@ -1,0 +1,7 @@
+[2018-03-25 07:02:30,959] INFO [GroupMetadataManager brokerId=0] Removed 0 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:12:30,959] INFO [GroupMetadataManager brokerId=0] Group DSClassification_Consumer_548912 transitioned to Dead in generation 2 (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:12:30,959] INFO [GroupMetadataManager brokerId=0] Removed 1 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:22:30,959] INFO [GroupMetadataManager brokerId=0] Removed 0 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:32:30,959] INFO [GroupMetadataManager brokerId=0] Removed 0 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:42:30,959] INFO [GroupMetadataManager brokerId=0] Removed 0 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)
+[2018-03-25 07:52:30,959] INFO [GroupMetadataManager brokerId=0] Removed 0 expired offsets in 0 milliseconds. (kafka.coordinator.group.GroupMetadataManager)

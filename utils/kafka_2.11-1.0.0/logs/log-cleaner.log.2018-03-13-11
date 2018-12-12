@@ -1,0 +1,3 @@
+[2018-03-13 11:47:40,752] INFO The cleaning for partition streams_ozone-0 is aborted and paused (kafka.log.LogCleaner)
+[2018-03-13 11:47:40,753] INFO Compaction for partition streams_ozone-0 is resumed (kafka.log.LogCleaner)
+[2018-03-13 11:47:40,753] INFO The cleaning for partition streams_ozone-0 is aborted (kafka.log.LogCleaner)
