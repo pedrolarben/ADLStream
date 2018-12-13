@@ -113,7 +113,7 @@ def run(args):
                         batch_counter += 1
 
                     train_time_start = time.clock()
-                    # print('Entrenando con las {} últimas instancias'.format(len(X_history)))
+                    print('Entrenando con las {} últimas instancias'.format(len(X_history)))
                     clf.fit(X_history, y_history, batch_size, epochs=1, verbose=0)
                     train_time_end = time.clock()
                     train_time = train_time_end - train_time_start
@@ -247,12 +247,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--output_path",
                         help="Directory path where results will be stored.",
-                        default='./DSClassificationResults/DSClassificationResults_keras')
-
+                        default='../../DSClassificationResults/DSClassificationResults_keras')
 
     parser.add_argument("--from_beginning",
                         help="Whether read messages from the beginning",
-                        default=False,
+                        default=True,
                         action='store_true')
 
     parser.add_argument("--bootstrap_servers",

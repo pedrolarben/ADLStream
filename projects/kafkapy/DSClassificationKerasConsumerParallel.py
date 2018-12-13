@@ -11,16 +11,16 @@ import sklearn.metrics as metrics
 import numpy as np
 import pandas as pd
 
-
+# Object shared among processes
 class Consumer:
 
     def __init__(self, batch_size=10, num_batches_fed=40, topic='', results_path='./', bootstrap_servers=None,
                  from_beginning=False, debug=True):
         self.batch_size = batch_size
-        # self.num_batches_fed = num_batches_fed
+        self.num_batches_fed = num_batches_fed
         self.topic = topic
         self.data_set_name = self.topic.replace('streams_', '')
-        self.results_path = os.path.join(results_path, topic)
+        self.results_path = os.path.join(results_path, self.data_set_name)
         self.bootstrap_servers = bootstrap_servers
         self.from_beginning = from_beginning
         self.debug = debug
@@ -30,6 +30,9 @@ class Consumer:
             'data': pd.DataFrame(),
             'metrics': pd.DataFrame()
         }}
+        self.x_training = None
+        self.y_training = None
+        self.batch_counter = 0
         self.count = 0
         self.initial_training_set = []
         self.num_features = None
@@ -155,6 +158,22 @@ class Consumer:
     def set_available(self, b):
         self.available = b
 
+    def add_training_data(self, x, y):
+        # ToDo: control training data size (streams are potentially unlimited, memory is finite)
+        if self.x_training is None or self.y_training is None:
+            self.x_training = x
+            self.y_training = y
+        else:
+            self.x_training = np.vstack((self.x_training, x))
+            self.y_training = np.vstack((self.y_training, y))
+            self.batch_counter += 1
+            if self.batch_counter >= self.num_batches_fed-1:
+                self.x_training = self.x_training[self.batch_size:]
+                self.y_training = self.y_training[self.batch_size:]
+                self.batch_counter = self.num_batches_fed-1
+
+    def get_training_data(self):
+        return np.copy(self.x_training), np.copy(self.y_training)
 
 # Get next message from Kafka
 def read_message(consumer):
@@ -164,8 +183,12 @@ def read_message(consumer):
 
 # Save Metrics
 def save_history(consumer, x, y, y_pred, test_time, train_time):
+    # print(y_pred)
+    # print(y)
     y_pred = np.argmax(y_pred, axis=1)
     y = np.argmax(y, axis=1)
+    # print(y_pred)
+    # print(y)
 
     x = np.array(x)
     if len(x.shape) == 3:
@@ -204,13 +227,13 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
 
 # Create results files
 def write_results_file(consumer):
-    file_path = os.path.join(consumer.get_results_path(), 'keras_' + consumer.get_clf_name())
+    file_path = os.path.join(consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     history_data = consumer.get_history()['data']
     history_data.columns = consumer.get_columns()
     history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
-    consumer.get_history()['metrics'].to_csv(os.path.join(file_path, '_metrics.csv'),
+    consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'metrics.csv'),
                                              columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
                                                       'recall', 'f1', 'fbeta',
                                                       'accuracy', 'train_time', 'test_time'),
@@ -237,7 +260,10 @@ def create_cnn_model(num_features, num_classes, loss_func):
     return model
 
 
-def train_model(consumer, model, x, y, index=-1):
+def train_model(consumer, model, index=-1):
+    # Add new nata to the training data
+    x_train, y_train = consumer.get_training_data()
+
     # Load weights
     weights = consumer.get_weights()
     if weights:
@@ -246,8 +272,8 @@ def train_model(consumer, model, x, y, index=-1):
     # Train
     train_time_start = time.time()
     if consumer.get_debug():
-        print("P" + str(index) + ": Training window")
-    model.fit(x, y, consumer.get_batch_size(), epochs=1, verbose=0)
+        print('P' + str(index) + ': Training with the last {} last instances'.format(len(x_train)))
+    model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
 
@@ -257,9 +283,9 @@ def train_model(consumer, model, x, y, index=-1):
     return train_time
 
 
-def classify(model, input):
+def classify(model, in_put):
     test_time_start = time.time()
-    y_pred = model.predict(input, verbose=0)
+    y_pred = model.predict(in_put, verbose=0)
     test_time_end = time.time()
     test_time = test_time_end - test_time_start
 
@@ -287,6 +313,7 @@ def DNN(index, consumer, lock_messages, lock_train):
     y_history = None
     train_time, test_time = 0., 0.
     count_messages = 0
+    waiting_to_train = False
 
     # Wait until first window available.
     while not consumer.get_initial_training_set():
@@ -321,12 +348,13 @@ def DNN(index, consumer, lock_messages, lock_train):
             x = np.expand_dims(np.array(window_x), axis=-1)
             y = to_categorical(window_y, len(consumer.get_classes()))
 
+            consumer.add_training_data(x, y)
             consumer.set_num_features(x.shape[1])
 
             # create model, train it and save the weights.
             model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
                                      consumer.get_loss_function())
-            train_model(consumer, model, x, y, index)
+            train_model(consumer, model, index)
 
             batch_counter += 1
 
@@ -356,7 +384,7 @@ def DNN(index, consumer, lock_messages, lock_train):
             if not consumer.is_time_out():
                 if consumer.get_debug():
                     print("P" + str(index) + ": ... waiting feeder")
-                time.sleep(0.25)
+                time.sleep(0.2)
 
         else:
             _ = record.pop('classes', None)
@@ -390,27 +418,23 @@ def DNN(index, consumer, lock_messages, lock_train):
 
             # if window completed
             if len(window_x) % batch_size == 0:
-                # if training is not free => free up space in the window and continue classifying
-                availabe = lock_train.acquire(False)
-                if not availabe:
-                    window_y.pop(0)
-                    window_x.pop(0)
-                    train_time = 0.
-                # Train window
-                else:
-                    x = np.expand_dims(np.array(window_x), axis=-1)
-                    window_y = list(np.array(window_y) - 1)
-                    y = to_categorical(window_y, consumer.get_num_classes())
+                # Format window data
+                x = np.expand_dims(np.array(window_x), axis=-1)
+                window_y = list(np.array(window_y))
+                y = to_categorical(window_y, consumer.get_num_classes())
+                consumer.add_training_data(x, y)
+                train_time = 0.
+                window_y, window_x = [], []
+                waiting_to_train = True
 
-                    train_time += train_model(consumer, model, x, y, index)
-
-                    window_y, window_x = [], []
-
-                    consumer.set_available(True)
+            if waiting_to_train:
+                available = lock_train.acquire(False)
+                if available:
+                    train_time = train_model(consumer, model, index)
                     lock_train.release()
+                    waiting_to_train = False
 
-                # Save metrics
-
+            # Save metrics
             if len(y_pred_history) % batch_size == 0:
                 save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, train_time)
                 y_pred_history = None
@@ -463,14 +487,14 @@ def run(args):
     topic = args.topic
     from_beginning = args.from_beginning
     batch_size = args.batch_size
-    # num_batches_fed = args.num_batches_fed
+    num_batches_fed = args.num_batches_fed
     output_path = args.output_path
     debug = args.debug
 
     BaseManager.register('Consumer', Consumer)
     manager = BaseManager()
     manager.start()
-    consumer = manager.Consumer(batch_size=batch_size, results_path=output_path, topic=topic,
+    consumer = manager.Consumer(batch_size=batch_size, num_batches_fed=num_batches_fed, results_path=output_path, topic=topic,
                                 bootstrap_servers=bootstrap_servers, from_beginning=from_beginning, debug=debug)
     lock_messages = Lock()
     lock_train = Lock()
@@ -512,9 +536,9 @@ if __name__ == '__main__':
                         help="Chunk size",
                         default=10)
 
-    # parser.add_argument("--num_batches_fed",
-    #                     help="Number of batches fed to the training process",
-    #                     default=40)
+    parser.add_argument("--num_batches_fed",
+                        help="Number of batches fed to the training process",
+                        default=40)
 
     parser.add_argument("--debug",
                         help="Whether print some log messages",
