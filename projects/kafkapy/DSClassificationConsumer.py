@@ -82,7 +82,7 @@ def test_train_eval(history, X_data, y_data, classes):
 
 
 def run(args):
-    bootstrap_servers = args.bootstrap_servers
+    bootstrap_servers = args.bootstrap_servers.split(' ')
     topic = args.topic
     dataset_name = topic.replace('streams_', '')
     from_beginning = args.from_beginning
@@ -141,8 +141,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--output_path",
                         help="Directory path where results will be stored.",
-                        default='/home/pedrolarben/datastream/dcos/volume0/aarcos/RES2/DSClassificationResults')
-
+                        default='../../DSClassificationResults/DSClassificationResults_keras')
 
     parser.add_argument("--from_beginning",
                         help="Whether read messages from the beginning",
@@ -151,7 +150,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--bootstrap_servers",
                         help="Bootstrap servers for Kafka producer",
-                        default=['localhost:9092'])
+                        default='localhost:9092')
 
     parser.add_argument("--topic",
                         help="Kafka topic name",

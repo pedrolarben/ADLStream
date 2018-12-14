@@ -45,7 +45,7 @@ def get_cnn_model(num_features, num_classes):
 
 def run(args):
     try:
-        bootstrap_servers = args.bootstrap_servers
+        bootstrap_servers = args.bootstrap_servers.split(' ')
         topic = args.topic
         dataset_name = topic.replace('streams_', '')
         from_beginning = args.from_beginning
@@ -102,9 +102,9 @@ def run(args):
                     is_first_batch = False
                     batch_counter += 1
                 else:
-                    test_time_start = time.clock()
+                    test_time_start = time.time()
                     y_pred = clf.predict(X, verbose=0)
-                    test_time_end = time.clock()
+                    test_time_end = time.time()
                     test_time = test_time_end - test_time_start
 
                     if batch_counter < num_batches_fed:
@@ -112,10 +112,10 @@ def run(args):
                         y_history = np.vstack((y_history, y))
                         batch_counter += 1
 
-                    train_time_start = time.clock()
+                    train_time_start = time.time()
                     print('Entrenando con las {} últimas instancias'.format(len(X_history)))
                     clf.fit(X_history, y_history, batch_size, epochs=1, verbose=0)
-                    train_time_end = time.clock()
+                    train_time_end = time.time()
                     train_time = train_time_end - train_time_start
 
                     if batch_counter >= num_batches_fed:
@@ -168,9 +168,9 @@ def run(args):
             X = np.expand_dims(np.array(X_data), axis=-1)
             y = to_categorical(y_data, len(classes))
 
-            test_time_start = time.clock()
+            test_time_start = time.time()
             y_pred = clf.predict(X, verbose=0)
-            test_time_end = time.clock()
+            test_time_end = time.time()
             test_time = test_time_end - test_time_start
 
             if batch_counter < num_batches_fed:
@@ -178,10 +178,10 @@ def run(args):
                 y_history = np.vstack((y_history, y))
                 batch_counter += 1
 
-            train_time_start = time.clock()
+            train_time_start = time.time()
             print('Entrenando con los {} últimas instancias'.format(len(X_history)))
             clf.fit(X_history, y_history, batch_size, epochs=1, verbose=0)
-            train_time_end = time.clock()
+            train_time_end = time.time()
             train_time = train_time_end - train_time_start
 
             if batch_counter >= num_batches_fed:
@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--bootstrap_servers",
                         help="Bootstrap servers for Kafka producer",
-                        default=['localhost:9092'])
+                        default='localhost:9092')
 
     parser.add_argument("--topic",
                         help="Kafka topic name",

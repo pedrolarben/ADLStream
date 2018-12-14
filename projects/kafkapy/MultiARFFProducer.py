@@ -11,9 +11,10 @@ import os
 
 def run(args):
     dir_path = args.dir_path
-    bootstrap_servers = args.bootstrap_servers
+    bootstrap_servers = args.bootstrap_servers.split(' ')
 
-    arff_files = glob.glob(os.path.join(dir_path, '**/*.arff'), recursive=True)
+    dir_name = os.path.dirname(__file__)
+    arff_files = glob.glob(os.path.join(dir_name, dir_path, '**/*.arff'), recursive=True)
     for file_path in arff_files:
         producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
                                  client_id='ARFF_Producer_{}'.format(random.randrange(999999)),
@@ -41,11 +42,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--dir_path",
                         help="Dir path where ARFF files are stored",
-                        default='/home/pedrolarben/datastream/dcos/volume0/aarcos/datasets_arff')
+                        default='../../datasets_arff')
 
     parser.add_argument("--bootstrap_servers",
                         help="Bootstrap servers for Kafka producer",
-                        default=['localhost:9092'])
+                        default='localhost:9092')
 
     args = parser.parse_args()
     run(args)

@@ -11,6 +11,7 @@ import sklearn.metrics as metrics
 import numpy as np
 import pandas as pd
 
+
 # Object shared among processes
 class Consumer:
 
@@ -175,6 +176,7 @@ class Consumer:
     def get_training_data(self):
         return np.copy(self.x_training), np.copy(self.y_training)
 
+
 # Get next message from Kafka
 def read_message(consumer):
     message = consumer.next()
@@ -227,7 +229,8 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
 
 # Create results files
 def write_results_file(consumer):
-    file_path = os.path.join(consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
+    dir_name = os.path.dirname(__file__)
+    file_path = os.path.join(dir_name, consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     history_data = consumer.get_history()['data']
@@ -483,7 +486,7 @@ def buffer_feeder(consumer, lock):
 
 
 def run(args):
-    bootstrap_servers = args.bootstrap_servers
+    bootstrap_servers = args.bootstrap_servers.split(' ')
     topic = args.topic
     from_beginning = args.from_beginning
     batch_size = args.batch_size
@@ -526,7 +529,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--bootstrap_servers",
                         help="Bootstrap servers for Kafka producer",
-                        default=['localhost:9092'])
+                        default='localhost:9092')
 
     parser.add_argument("--topic",
                         help="Kafka topic name",
