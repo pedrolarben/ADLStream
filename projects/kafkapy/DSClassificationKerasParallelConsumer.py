@@ -460,6 +460,7 @@ def buffer_feeder(consumer, lock):
     i = 0
     while True:
         try:
+            print("new message")
             message = next(kafka_consumer).value
             i += 1
             new_batch.append(message)
@@ -493,7 +494,7 @@ def run(args):
     num_batches_fed = args.num_batches_fed
     output_path = args.output_path
     debug = args.debug
-
+    print("Usando bootstrap_servers: " + str(bootstrap_servers))
     BaseManager.register('Consumer', Consumer)
     manager = BaseManager()
     manager.start()
@@ -529,11 +530,11 @@ if __name__ == '__main__':
 
     parser.add_argument("--bootstrap_servers",
                         help="Bootstrap servers for Kafka producer",
-                        default='localhost:9092')
+                        default='10.141.0.225:1025')
 
     parser.add_argument("--topic",
                         help="Kafka topic name",
-                        default='streams_breast')
+                        default='streams_electricity')
 
     parser.add_argument("--batch_size",
                         help="Chunk size",
@@ -548,4 +549,5 @@ if __name__ == '__main__':
                         default=True)
 
     args = parser.parse_args()
+    print(args)
     run(args)
