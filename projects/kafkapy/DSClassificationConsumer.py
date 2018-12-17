@@ -35,18 +35,18 @@ def test_train_eval(history, X_data, y_data, classes):
                 'metrics': pd.DataFrame()
             }
         try:
-            test_time_start = time.clock()
+            test_time_start = time.time()
             y_pred = clf.predict(X_data)
-            test_time_end = time.clock()
+            test_time_end = time.time()
             test_time = test_time_end - test_time_start
 
             records = pd.DataFrame(np.hstack(
                 (np.array(X_data), np.array(y_data).reshape(-1, 1), y_pred.reshape(-1, 1))))
             history[clf_name]['data'] = pd.concat((history[clf_name]['data'], records), ignore_index=True)
 
-            train_time_start = time.clock()
+            train_time_start = time.time()
             clf.partial_fit(X_data, y_data)
-            train_time_end = time.clock()
+            train_time_end = time.time()
             train_time = train_time_end - train_time_start
 
             average = 'binary' if len(classes) == 2 else 'weighted'
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--output_path",
                         help="Directory path where results will be stored.",
-                        default='../../DSClassificationResults/DSClassificationResults_keras')
+                        default='../../DSClassificationResults/DSClassificationResults_sklearn')
 
     parser.add_argument("--from_beginning",
                         help="Whether read messages from the beginning",
