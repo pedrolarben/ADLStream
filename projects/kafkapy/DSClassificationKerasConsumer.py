@@ -227,7 +227,8 @@ def run(args):
             })
             history[clf_name]['metrics'] = history[clf_name]['metrics'].append(metrics_record, ignore_index=True)
 
-        output_path = os.path.join(results_path, 'keras_' + clf_name)
+        dir_name = os.path.dirname(__file__)
+        output_path = os.path.join(dir_name, results_path, 'keras_' + clf_name)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         history[clf_name]['data'].columns = columns

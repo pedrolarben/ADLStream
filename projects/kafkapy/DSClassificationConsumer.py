@@ -120,7 +120,8 @@ def run(args):
 
         for clf_info in classifiers:
             clf_name = clf_info['name']
-            output_path = os.path.join(results_path, 'sklearn_' + clf_name)
+            dir_name = os.path.dirname(__file__)
+            output_path = os.path.join(dir_name, results_path, 'sklearn_' + clf_name)
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
             history[clf_name]['data'].columns = columns
