@@ -267,7 +267,7 @@ def create_cnn_model(num_features, num_classes, loss_func):
     return model
 
 
-def train_model(consumer, model, index=-1):
+def train_model(consumer, model, index=-1, device=None):
     # Add new nata to the training data
     x_train, y_train = consumer.get_training_data()
 
@@ -279,7 +279,7 @@ def train_model(consumer, model, index=-1):
     # Train
     train_time_start = time.time()
     if consumer.get_debug():
-        print('P' + str(index) + ': Training with the last {} last instances'.format(len(x_train)))
+        print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
@@ -365,7 +365,7 @@ def DNN(index, consumer, lock_messages, lock_train):
                 # create model, train it and save the weights.
                 model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
                                          consumer.get_loss_function())
-                train_model(consumer, model, index)
+                train_model(consumer, model, index, device)
 
                 batch_counter += 1
 
@@ -441,7 +441,7 @@ def DNN(index, consumer, lock_messages, lock_train):
                 if waiting_to_train:
                     available = lock_train.acquire(False)
                     if available:
-                        train_time = train_model(consumer, model, index)
+                        train_time = train_model(consumer, model, index, device)
                         lock_train.release()
                         waiting_to_train = False
 

@@ -5,5 +5,5 @@ topics=(streams_electricity streams_airlinesnorm streams_Adiac streams_ArrowHead
 for topic in ${topics[@]}; do
 	echo "Consuming $topic"
 	#nohup mesos-execute --master=10.141.0.224:5050 --name="$topic sklearn consumer" --command="python3 /home/pedrolarben/datastream/dcos/volume0/aarcos/projects/kafkapy/DSClassificationConsumer.py --topic $topic --from_beginning" &
-	python ../projects/kafkapy/DSClassificationKerasParallelConsumer.py --topic $topic --from_beginning --bootstrap_servers localhost:9092 --debug False --two_gpu True
+	python ../projects/kafkapy/DSClassificationKerasParallelConsumer.py --topic $topic --from_beginning --bootstrap_servers localhost:9092 --debug false --two_gpu true
 done

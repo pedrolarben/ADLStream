@@ -12,3 +12,4 @@ java -jar ../projects/MOAKafka/out/artifacts/MOAKafka_jar/MOAKafka.jar localhost
 #		java -jar ../projects/MOAKafka_localhost.jar $topic true $clf $output_dir_path	
 #	done
 #done 
+
