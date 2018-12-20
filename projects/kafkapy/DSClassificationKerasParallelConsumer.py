@@ -498,7 +498,7 @@ def run(args):
     topic = args.topic
     from_beginning = args.from_beginning
     batch_size = args.batch_size
-    num_batches_fed = args.num_batches_fed
+    num_batches_fed = int(args.num_batches_fed)
     output_path = args.output_path
     debug = args.debug
     two_gpu = args.two_gpu
