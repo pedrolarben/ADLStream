@@ -267,9 +267,7 @@ def create_cnn_model(num_features, num_classes, loss_func):
     return model
 
 
-def train_model(consumer, model, index=-1, device=None):
-    # Add new nata to the training data
-    x_train, y_train = consumer.get_training_data()
+def train_model(x_train, y_train, consumer, model, index=-1, device=None):
 
     # Load weights
     weights = consumer.get_weights()
@@ -280,6 +278,7 @@ def train_model(consumer, model, index=-1, device=None):
     train_time_start = time.time()
     if consumer.get_debug():
         print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
+    #print(len(x_train), len(y_train))
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
@@ -300,7 +299,7 @@ def classify(model, in_put):
 
 
 # DNN 0
-def DNN(index, consumer, lock_messages, lock_train):
+def DNN(index, consumer, lock_messages, lock_train, lock_training_data):
     import tensorflow as tf
     from keras import backend as K
     from keras.utils import to_categorical
@@ -359,13 +358,17 @@ def DNN(index, consumer, lock_messages, lock_train):
                 x = np.expand_dims(np.array(window_x), axis=-1)
                 y = to_categorical(window_y, len(consumer.get_classes()))
 
-                consumer.add_training_data(x, y)
+                with lock_training_data:
+                    consumer.add_training_data(x, y)
                 consumer.set_num_features(x.shape[1])
 
                 # create model, train it and save the weights.
                 model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
                                          consumer.get_loss_function())
-                train_model(consumer, model, index, device)
+                # Add new nata to the training data
+                with lock_training_data:
+                    x_train, y_train = consumer.get_training_data()
+                train_model(x_train, y_train,consumer, model, index, device)
 
                 batch_counter += 1
 
@@ -433,7 +436,8 @@ def DNN(index, consumer, lock_messages, lock_train):
                     x = np.expand_dims(np.array(window_x), axis=-1)
                     window_y = list(np.array(window_y))
                     y = to_categorical(window_y, consumer.get_num_classes())
-                    consumer.add_training_data(x, y)
+                    with lock_training_data:
+                        consumer.add_training_data(x, y)
                     train_time = 0.
                     window_y, window_x = [], []
                     waiting_to_train = True
@@ -441,7 +445,10 @@ def DNN(index, consumer, lock_messages, lock_train):
                 if waiting_to_train:
                     available = lock_train.acquire(False)
                     if available:
-                        train_time = train_model(consumer, model, index, device)
+                        # Add new nata to the training data
+                        with lock_training_data:
+                            x_train, y_train = consumer.get_training_data()
+                        train_time = train_model(x_train, y_train, consumer, model, index, device)
                         lock_train.release()
                         waiting_to_train = False
 
@@ -510,10 +517,11 @@ def run(args):
                                 bootstrap_servers=bootstrap_servers, from_beginning=from_beginning, debug=debug, two_gpu=two_gpu)
     lock_messages = Lock()
     lock_train = Lock()
+    lock_training_data = Lock()
 
     pb = Process(target=buffer_feeder, args=[consumer, lock_messages])
-    p0 = Process(target=DNN, args=[0, consumer, lock_messages, lock_train])
-    p1 = Process(target=DNN, args=[1, consumer, lock_messages, lock_train])
+    p0 = Process(target=DNN, args=[0, consumer, lock_messages, lock_train, lock_training_data])
+    p1 = Process(target=DNN, args=[1, consumer, lock_messages, lock_train, lock_training_data])
     pb.start()
     p0.start()
     p1.start()
