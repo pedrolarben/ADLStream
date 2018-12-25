@@ -26,15 +26,12 @@ class Consumer:
         self.from_beginning = from_beginning
         self.debug = debug
         self.two_gpu = two_gpu
-        self.new_model_available = False
         self.buffer = []
         self.time_out = False
-        self.finished = False
         self.history = {self.data_set_name: {
             'data': pd.DataFrame(),
             'metrics': pd.DataFrame()
         }}
-        self.train_time = 0.
         self.x_training = None
         self.y_training = None
         self.batch_counter = 0
@@ -160,31 +157,11 @@ class Consumer:
     def get_weights(self):
         return self.weights
 
-    def set_new_model_available(self, b=True):
-        self.new_model_available = b
-
-    def is_new_model_available(self):
-        return self.new_model_available
-
-    def is_finished(self):
-        return self.finished
-
-    def set_finished(self):
-        self.finished = True
-
     def is_available(self):
         return self.available
 
     def set_available(self, b):
         self.available = b
-
-    def add_train_time(self, new_train_time):
-        self.train_time += new_train_time
-
-    def get_train_time(self):
-        res = self.train_time
-        self.train_time = 0
-        return res
 
     def add_training_data(self, x, y):
         # ToDo: control training data size (streams are potentially unlimited, memory is finite)
@@ -195,24 +172,13 @@ class Consumer:
             self.x_training = np.vstack((self.x_training, x))
             self.y_training = np.vstack((self.y_training, y))
             self.batch_counter += 1
+            if self.batch_counter >= self.num_batches_fed-1:
+                self.x_training = self.x_training[self.batch_size:]
+                self.y_training = self.y_training[self.batch_size:]
+                self.batch_counter = self.num_batches_fed-1
 
     def get_training_data(self):
-        x, y = np.copy(self.x_training), np.copy(self.y_training)
-
-        num_instances_to_train = self.batch_size * self.num_batches_fed
-        if len(x) > num_instances_to_train:
-            self.x_training = self.x_training[-num_instances_to_train:]
-            self.y_training = self.y_training[-num_instances_to_train:]
-            indices = list(range(len(x)))
-            k, m = divmod(len(indices), 4)
-            w = [1/8]*(k+1 if m > 0 else k) + [1/4]*(k+1 if m > 1 else k) + [1/2]*(k+1 if m > 2 else k) + [10]*k
-            w = [e/sum(w) for e in w]
-            indices = sorted(np.random.choice(indices, num_instances_to_train, False, w))
-            x = np.take(x, indices, axis=0)
-            y = np.take(y, indices, axis=0)
-
-        return x, y
-
+        return np.copy(self.x_training), np.copy(self.y_training)
 
 
 # Get next message from Kafka
@@ -304,14 +270,15 @@ def create_cnn_model(num_features, num_classes, loss_func):
 def train_model(x_train, y_train, consumer, model, index=-1, device=None):
 
     # Load weights
-    # weights = consumer.get_weights()
-    # if weights:
-    #     model.set_weights(weights)
+    weights = consumer.get_weights()
+    if weights:
+        model.set_weights(weights)
 
     # Train
+    train_time_start = time.time()
     if consumer.get_debug():
         print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
-    train_time_start = time.time()
+    #print(len(x_train), len(y_train))
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
@@ -319,37 +286,44 @@ def train_model(x_train, y_train, consumer, model, index=-1, device=None):
     # Save model weights
     consumer.set_weights(model.get_weights())
 
-    # Notify new model available
-    consumer.set_new_model_available()
-
     return train_time
 
 
-def classify(model, input_data):
+def classify(model, in_put):
     test_time_start = time.time()
-    y_pred = model.predict(input_data, verbose=0)
+    y_pred = model.predict(in_put, verbose=0)
     test_time_end = time.time()
     test_time = test_time_end - test_time_start
 
     return y_pred, test_time
 
 
-# DNN training process
-def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
+# DNN 0
+def DNN(index, consumer, lock_messages, lock_train, lock_training_data):
     import tensorflow as tf
     from keras import backend as K
     from keras.utils import to_categorical
 
     device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
 
-    session_conf = tf.ConfigProto(log_device_placement=False)
+    session_conf = tf.ConfigProto(log_device_placement=True)
     session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
     K.set_session(sess)
 
     with K.tf.device(device):
 
-
+        window_y, window_x = [], []
+        model = None
+        batch_size = consumer.get_batch_size()
+        # num_batches_fed = consumer.get_num_batches_fed()
+        batch_counter = 1
+        y_pred_history = None
+        x_pred_history = None
+        y_history = None
+        train_time, test_time = 0., 0.
+        count_messages = 0
+        waiting_to_train = False
 
         # Wait until first window available.
         while not consumer.get_initial_training_set():
@@ -358,92 +332,64 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
             pass
 
         # Create and train model for the first time.
-        initial_training_set = consumer.get_initial_training_set()
-        window_y, window_x = [], []
+        with lock_train:
 
-        for record in initial_training_set:
-            consumer.set_classes(record.pop('classes', None))
-            window_y.append(record.pop('class', None))
-            window_x.append(list(record.values()))
+            initial_training_set = consumer.get_initial_training_set()
 
-            if not consumer.get_columns():
-                aux_columns = list(record.keys())
-                aux_columns.extend(['class', 'prediction'])
-                consumer.set_columns(aux_columns)
+            # If first one training
+            if consumer.get_weights() is None:
 
-        if consumer.get_num_classes() == 2:
-            consumer.set_loss_function('binary_crossentropy')
-            consumer.set_average('binary')
+                for record in initial_training_set:
 
-        x = np.expand_dims(np.array(window_x), axis=-1)
-        y = to_categorical(window_y, len(consumer.get_classes()))
+                    consumer.set_classes(record.pop('classes', None))
 
-        with lock_training_data:
-            consumer.add_training_data(x, y)
-        consumer.set_num_features(x.shape[1])
+                    window_y.append(record.pop('class', None))
+                    window_x.append(list(record.values()))
 
-        # create model, train it and save the weights.
-        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                 consumer.get_loss_function())
-        with lock_training_data:
-            x_train, y_train = consumer.get_training_data()
-        train_model(x_train, y_train, consumer, model, index, device)
+                    if not consumer.get_columns():
+                        aux_columns = list(record.keys())
+                        aux_columns.extend(['class', 'prediction'])
+                        consumer.set_columns(aux_columns)
 
-        # Main loop
-        while not consumer.is_finished():
-            # TODO: controll when to train and when to stop
-            with lock_training_data:
-                x_train, y_train = consumer.get_training_data()
-            train_time = train_model(x_train, y_train, consumer, model, index, device)
-            consumer.add_train_time(train_time)
+                if consumer.get_num_classes() == 2:
+                    consumer.set_loss_function('binary_crossentropy')
+                    consumer.set_average('binary')
 
+                x = np.expand_dims(np.array(window_x), axis=-1)
+                y = to_categorical(window_y, len(consumer.get_classes()))
 
-# DNN classifying process
-def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data):
-    import tensorflow as tf
-    from keras import backend as K
-    from keras.utils import to_categorical
+                with lock_training_data:
+                    consumer.add_training_data(x, y)
+                consumer.set_num_features(x.shape[1])
 
-    device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
+                # create model, train it and save the weights.
+                model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
+                                         consumer.get_loss_function())
+                # Add new nata to the training data
+                with lock_training_data:
+                    x_train, y_train = consumer.get_training_data()
+                train_model(x_train, y_train,consumer, model, index, device)
 
-    session_conf = tf.ConfigProto(log_device_placement=False)
-    session_conf.gpu_options.allow_growth = True
-    sess = tf.Session(config=session_conf)
-    K.set_session(sess)
+                batch_counter += 1
 
-    with K.tf.device(device):
-
-        window_y, window_x = [], []
-        batch_size = consumer.get_batch_size()
-        # num_batches_fed = consumer.get_num_batches_fed()
-        batch_counter = 1
-        y_pred_history = None
-        x_pred_history = None
-        y_history = None
-        test_time = 0.
-
-        # Wait until model is created.
-        while not consumer.is_new_model_available():
-            if consumer.is_time_out():
-                return
-            pass
-
-        # create model and load weights
-        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                 consumer.get_loss_function())
-        model.set_weights(consumer.get_weights())
+            # If It has been already trained by other process ...
+            else:
+                # create model and load weights
+                model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
+                                         consumer.get_loss_function())
+                model.set_weights(consumer.get_weights())
 
         # Main loop
         while True:
             with lock_messages:
+                count_messages += 1
                 record = read_message(consumer)
             # if no message received...
             if record is None:
                 # if timeout = true --> break
                 if consumer.is_time_out():
-                    consumer.set_finished()
                     if consumer.get_debug():
-                        print("P" + str(index) + ": Finish")
+                        print("P" + str(index) + ": Finish - " + str(count_messages) + " messages")
                     if y_pred_history is not None:
                         save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, 0.)
                     write_results_file(consumer)
@@ -464,12 +410,8 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
 
                 y = to_categorical([window_y[-1]], consumer.get_num_classes())
 
-                x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
-                # Update model if new model available
-                if consumer.is_new_model_available():
-                    model.set_weights(consumer.get_weights())
-                    consumer.set_new_model_available(False)
                 # Classify
+                x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
                 y_pred, test_time_aux = classify(model, x_pred)
                 test_time += test_time_aux
 
@@ -496,14 +438,28 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
                     y = to_categorical(window_y, consumer.get_num_classes())
                     with lock_training_data:
                         consumer.add_training_data(x, y)
+                    train_time = 0.
                     window_y, window_x = [], []
+                    waiting_to_train = True
 
-                    # Save metrics
-                    save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, consumer.get_train_time())
+                if waiting_to_train:
+                    available = lock_train.acquire(False)
+                    if available:
+                        # Add new nata to the training data
+                        with lock_training_data:
+                            x_train, y_train = consumer.get_training_data()
+                        train_time = train_model(x_train, y_train, consumer, model, index, device)
+                        lock_train.release()
+                        waiting_to_train = False
+
+                # Save metrics
+                if len(y_pred_history) % batch_size == 0:
+                    save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, train_time)
                     y_pred_history = None
                     x_pred_history = None
                     y_history = None
                     test_time = 0.
+                    train_time = 0.
 
 
 # Buffer feeder
@@ -564,8 +520,8 @@ def run(args):
     lock_training_data = Lock()
 
     pb = Process(target=buffer_feeder, args=[consumer, lock_messages])
-    p0 = Process(target=dnn_train, args=[0, consumer, lock_messages, lock_train, lock_training_data])
-    p1 = Process(target=dnn_classify, args=[1, consumer, lock_messages, lock_train, lock_training_data])
+    p0 = Process(target=DNN, args=[0, consumer, lock_messages, lock_train, lock_training_data])
+    p1 = Process(target=DNN, args=[1, consumer, lock_messages, lock_train, lock_training_data])
     pb.start()
     p0.start()
     p1.start()
