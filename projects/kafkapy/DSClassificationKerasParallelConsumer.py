@@ -417,6 +417,7 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
         batch_size = consumer.get_batch_size()
         # num_batches_fed = consumer.get_num_batches_fed()
         batch_counter = 1
+        count_messages = 0
         y_pred_history = None
         x_pred_history = None
         y_history = None
@@ -490,6 +491,10 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
 
                 # if window completed
                 if len(window_x) % batch_size == 0:
+                    count_messages += batch_size
+                    if consumer.get_debug():
+                        print('P' + str(index) + ' (' + device + '):  {} instances classified'.format(
+                            count_messages))
                     # Format window data
                     x = np.expand_dims(np.array(window_x), axis=-1)
                     window_y = list(np.array(window_y))
