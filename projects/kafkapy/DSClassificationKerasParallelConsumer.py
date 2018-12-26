@@ -342,7 +342,7 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
 
     device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
 
-    session_conf = tf.ConfigProto(log_device_placement=False)
+    session_conf = tf.ConfigProto(log_device_placement=True)
     session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
     K.set_session(sess)
@@ -406,7 +406,7 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
 
     device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
 
-    session_conf = tf.ConfigProto(log_device_placement=False)
+    session_conf = tf.ConfigProto(log_device_placement=True)
     session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
     K.set_session(sess)
