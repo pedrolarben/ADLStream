@@ -24,7 +24,9 @@ def run(args):
         data, meta = arff.loadarff(file_path)
         attributes = [x for x in meta]
         df = pd.DataFrame(data)
-        classes = np.unique(df['class']).astype(np.int).tolist()
+        class_name = 'class' if 'class' in df.columns else 'target'
+        classes = np.unique(df[class_name]).astype(np.int).tolist()
+        min_classes = min(classes)
 
         for _, entry in enumerate(data):
             record = {'classes': classes}
@@ -32,6 +34,8 @@ def run(args):
                 value = entry[attr]
                 if type(value) == np.bytes_:
                     value = int(value.decode('UTF-8'))
+                if attr == class_name:
+                    attr = 'class'
                 record[attr] = value
             producer.send(topic, record)
         producer.close()

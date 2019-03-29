@@ -7,6 +7,7 @@ import pandas as pd
 import time
 import os
 import sklearn.metrics as metrics
+from sklearn.preprocessing import label_binarize
 import traceback
 import tensorflow as tf
 from keras import backend as K
@@ -84,7 +85,10 @@ def run(args):
                 columns.extend(['class', 'prediction'])
             if len(X_data) % batch_size == 0:
                 X = np.expand_dims(np.array(X_data), axis=-1)
-                y = to_categorical(y_data, len(classes))
+                #y = to_categorical(y_data, len(classes))
+                y = label_binarize(y_data, classes)
+                if len(classes) == 2:
+                    y = np.eye(2)[y.flatten()]
                 if is_first_batch:
                     clf = get_cnn_model(X.shape[1], len(classes))
                     if not clf_name in history:
@@ -166,7 +170,10 @@ def run(args):
 
         if X_data and y_data:
             X = np.expand_dims(np.array(X_data), axis=-1)
-            y = to_categorical(y_data, len(classes))
+            #y = to_categorical(y_data, len(classes))
+            y = label_binarize(y_data, classes)
+            if len(classes) == 2:
+                y = np.eye(2)[y.flatten()]
 
             test_time_start = time.time()
             y_pred = clf.predict(X, verbose=0)
