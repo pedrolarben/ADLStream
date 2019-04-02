@@ -8,6 +8,7 @@ from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
 from kafka import KafkaConsumer
 import sklearn.metrics as metrics
+from sklearn.preprocessing import label_binarize
 import numpy as np
 import pandas as pd
 
@@ -376,8 +377,11 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
             consumer.set_average('binary')
 
         x = np.expand_dims(np.array(window_x), axis=-1)
-        y = to_categorical(window_y, len(consumer.get_classes()))
-
+        #y = to_categorical(window_y, len(consumer.get_classes()))
+        print(window_y, consumer.get_classes())
+        y = label_binarize(window_y, consumer.get_classes())
+        if consumer.get_num_classes()==2:
+            y = np.eye(2)[y.flatten()]
         with lock_training_data:
             consumer.add_training_data(x, y)
         consumer.set_num_features(x.shape[1])
@@ -463,7 +467,11 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
                 window_y.append(record_class)
                 window_x.append(record_values)
 
-                y = to_categorical([window_y[-1]], consumer.get_num_classes())
+                #y = to_categorical([window_y[-1]], consumer.get_num_classes())
+
+                y = label_binarize([window_y[-1]], consumer.get_classes())
+                if consumer.get_num_classes() == 2:
+                    y = np.eye(2)[y.flatten()]
 
                 x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
                 # Update model if new model available
@@ -498,7 +506,11 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
                     # Format window data
                     x = np.expand_dims(np.array(window_x), axis=-1)
                     window_y = list(np.array(window_y))
-                    y = to_categorical(window_y, consumer.get_num_classes())
+                    #y = to_categorical(window_y, consumer.get_num_classes())
+                    y = label_binarize(window_y, consumer.get_classes())
+                    if consumer.get_num_classes() == 2:
+                        y = np.eye(2)[y.flatten()]
+
                     with lock_training_data:
                         consumer.add_training_data(x, y)
                     window_y, window_x = [], []
