@@ -16,6 +16,7 @@ public class DSClassificationMOAConsumer {
 
     public final static String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
 //    private final static String BOOTSTRAP_SERVERS = "PLAINTEXT://hal9k.lsi.us.es:9092";
+    public final static int CHUNK_SIZE = 10;
 
     private static Consumer<Long, String> createConsumer(String topic, String bootstrapServer, boolean fromBeginning) {
         if(bootstrapServer == "")
@@ -48,8 +49,7 @@ public class DSClassificationMOAConsumer {
 
         final Classifier classifier = MOAClassifierFactory.getClassifier(classifierName);
         classifier.prepareForUse();
-        AtomicInteger numSamples = new AtomicInteger();
-        AtomicInteger numSamplesCorrect = new AtomicInteger();
+
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -77,15 +77,18 @@ public class DSClassificationMOAConsumer {
         StringBuilder sbHeader = new StringBuilder();
         sbHeader.append("total");
         sbHeader.append(",");
-        sbHeader.append("train_time");
+        sbHeader.append("train_time_S");
         sbHeader.append(",");
-        sbHeader.append("test_time");
+        sbHeader.append("test_time_s");
         sbHeader.append(",");
         sbHeader.append("accuracy");
         sbHeader.append("\n");
         pwMetrics.write(sbHeader.toString());
 
         boolean dataHeaderWritten = false;
+
+        AtomicInteger numSamples = new AtomicInteger();
+        List<ConsumerRecord<Long, String>> chunkInstances =  new ArrayList<ConsumerRecord<Long, String>>();
 
         while(true){
             final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000);
@@ -95,9 +98,106 @@ public class DSClassificationMOAConsumer {
                 if(noRecordsCount > giveUp) break;
                 else continue;
             }
+            for ( ConsumerRecord<Long, String> record : consumerRecords) {
+                //add record to chunk
+                chunkInstances.add(record);
 
-            for (ConsumerRecord<Long, String> record : consumerRecords) {
-                String value = record.value();
+                // if chunk completed: test-then-train
+                if( chunkInstances.size() % CHUNK_SIZE == 0){
+
+                    AtomicInteger numSamplesCorrect = new AtomicInteger();
+                    StringBuilder sb = new StringBuilder();
+
+                    // Test every instance of the chunk
+                    long testTime = 0l;
+                    for(ConsumerRecord<Long, String> r: chunkInstances ) {
+                        //Transform json string to instance
+                        String value = r.value();
+                        DSJsonToMoaInstanceConverter converter = new DSJsonToMoaInstanceConverter(topicName);
+                        Instance instance = null;
+                        try {
+                            instance = converter.moaInstance(value);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        // Check accuracy of the chunk
+                        if (classifier.correctlyClassifies(instance)) {
+                            numSamplesCorrect.incrementAndGet();
+                        }
+                        numSamples.incrementAndGet();
+
+                        // Get prediction value and count the test time
+                        long testStartTime = System.nanoTime();
+                        double prediction = Utils.maxIndex(classifier.getVotesForInstance(instance));
+                        long testEndTime = System.nanoTime();
+                        testTime += (testEndTime - testStartTime);
+
+                        // Add row to data file (values, class and predicted class)
+                        for (Double v : converter.getValuesList()) {
+                            sb.append(v);
+                            sb.append(",");
+                        }
+                        sb.append(prediction);
+                        sb.append("\n");
+                        pwData.write(sb.toString());
+
+                    }
+                    double testTimeSeconds = (double)testTime / 1_000_000_000.0;
+                    double accuracy = (double) numSamplesCorrect.get() / chunkInstances.size();
+
+                    // Train chunk
+                    long trainTime = 0l;
+                    for(ConsumerRecord<Long, String> r: chunkInstances){
+                        //Transform json string to instance
+                        String value = r.value();
+                        DSJsonToMoaInstanceConverter converter = new DSJsonToMoaInstanceConverter(topicName);
+                        Instance instance = null;
+                        try {
+                            instance = converter.moaInstance(value);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        long trainStartTime = System.nanoTime();
+                        classifier.trainOnInstance(instance);
+                        long trainEndTime = System.nanoTime();
+                        trainTime += (trainEndTime - trainStartTime);
+                    }
+                    double trainTimeSeconds = (double)trainTime / 1_000_000_000.0;
+
+                    // Add chunk metrics to a new row in metrics file
+                    sb.setLength(0);
+                    sb.append(numSamples.get());
+                    sb.append(",");
+                    sb.append(trainTimeSeconds);
+                    sb.append(",");
+                    sb.append(testTimeSeconds);
+                    sb.append(",");
+                    sb.append(accuracy);
+                    sb.append("\n");
+                    pwMetrics.write(sb.toString());
+
+                    // restart chunk
+                    chunkInstances =  new ArrayList<ConsumerRecord<Long, String>>();
+                }
+
+            }
+
+            consumer.commitAsync();
+
+        }
+
+        // If the last chunk is incomplete:
+        if(!chunkInstances.isEmpty()){
+
+            AtomicInteger numSamplesCorrect = new AtomicInteger();
+            StringBuilder sb = new StringBuilder();
+
+            // Test every instance of the chunk
+            long testTime = 0l;
+            for(ConsumerRecord<Long, String> r: chunkInstances ) {
+                //Transform json string to instance
+                String value = r.value();
                 DSJsonToMoaInstanceConverter converter = new DSJsonToMoaInstanceConverter(topicName);
                 Instance instance = null;
                 try {
@@ -106,39 +206,19 @@ public class DSClassificationMOAConsumer {
                     e.printStackTrace();
                 }
 
-                if (!dataHeaderWritten) {
-                    StringBuilder sbh = new StringBuilder();
-                    for (String s : converter.getKeysList()) {
-                        sbh.append(s);
-                        sbh.append(",");
-                    }
-                    sbh.append("prediction");
-                    sbh.append("\n");
-                    pwData.print(sbh.toString());
-                    dataHeaderWritten = true;
-                }
-
+                // Check accuracy of the chunk
                 if (classifier.correctlyClassifies(instance)) {
                     numSamplesCorrect.incrementAndGet();
                 }
+                numSamples.incrementAndGet();
 
+                // Get prediction value and count the test time
                 long testStartTime = System.nanoTime();
                 double prediction = Utils.maxIndex(classifier.getVotesForInstance(instance));
                 long testEndTime = System.nanoTime();
-                long testTime = (testEndTime - testStartTime);
-                double testTimeSeconds = (double)testTime / 1_000_000_000.0;
+                testTime += (testEndTime - testStartTime);
 
-                long trainStartTime = System.nanoTime();
-                classifier.trainOnInstance(instance);
-                long trainEndTime = System.nanoTime();
-                long trainTime = (trainEndTime - trainStartTime);
-                double trainTimeSeconds = (double)trainTime / 1_000_000_000.0;
-
-
-                numSamples.getAndIncrement();
-                double accuracy = 100.0 * (double) numSamplesCorrect.get() / numSamples.get();
-
-                StringBuilder sb = new StringBuilder();
+                // Add row to data file (values, class and predicted class)
                 for (Double v : converter.getValuesList()) {
                     sb.append(v);
                     sb.append(",");
@@ -147,21 +227,42 @@ public class DSClassificationMOAConsumer {
                 sb.append("\n");
                 pwData.write(sb.toString());
 
-                sb.setLength(0);
-                sb.append(numSamples.get());
-                sb.append(",");
-                sb.append(trainTimeSeconds);
-                sb.append(",");
-                sb.append(testTimeSeconds);
-                sb.append(",");
-                sb.append(accuracy);
-                sb.append("\n");
-                pwMetrics.write(sb.toString());
             }
+            double testTimeSeconds = (double)testTime / 1_000_000_000.0;
+            double accuracy = (double) numSamplesCorrect.get() / chunkInstances.size();
 
-            consumer.commitAsync();
+            // Train chunk
+            long trainTime = 0l;
+            for(ConsumerRecord<Long, String> r: chunkInstances){
+                //Transform json string to instance
+                String value = r.value();
+                DSJsonToMoaInstanceConverter converter = new DSJsonToMoaInstanceConverter(topicName);
+                Instance instance = null;
+                try {
+                    instance = converter.moaInstance(value);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                long trainStartTime = System.nanoTime();
+                classifier.trainOnInstance(instance);
+                long trainEndTime = System.nanoTime();
+                trainTime += (trainEndTime - trainStartTime);
+            }
+            double trainTimeSeconds = (double)trainTime / 1_000_000_000.0;
 
+            // Add chunk metrics to a new row in metrics file
+            sb.setLength(0);
+            sb.append(numSamples.get());
+            sb.append(",");
+            sb.append(trainTimeSeconds);
+            sb.append(",");
+            sb.append(testTimeSeconds);
+            sb.append(",");
+            sb.append(accuracy);
+            sb.append("\n");
+            pwMetrics.write(sb.toString());
         }
+
         consumer.close();
         if (pwData != null){
             pwData.close();
@@ -170,9 +271,9 @@ public class DSClassificationMOAConsumer {
             pwMetrics.close();
         }
 
-        double accuracy = 100.0 * (double) numSamplesCorrect.get() / (double) numSamples.get();
+        String accuracy = "NOT KNOWN";//100.0 * (double) numSamplesCorrect.get() / (double) numSamples.get();
         System.out.println(classifierName + " processed " + numSamples.get() +
-                " instances from topic " + topicName + " with " + accuracy + "% accuracy.");
+                " instances from topic " + topicName + " with " + accuracy + " accuracy.");
         System.out.println("DONE");
 
     }
