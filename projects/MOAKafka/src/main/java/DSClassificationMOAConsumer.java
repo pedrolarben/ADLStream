@@ -140,9 +140,8 @@ public class DSClassificationMOAConsumer {
                         }
                         sb.append(prediction);
                         sb.append("\n");
-                        pwData.write(sb.toString());
-
                     }
+                    pwData.write(sb.toString());
                     double testTimeSeconds = (double)testTime / 1_000_000_000.0;
                     double accuracy = (double) numSamplesCorrect.get() / chunkInstances.size();
 
@@ -225,9 +224,8 @@ public class DSClassificationMOAConsumer {
                 }
                 sb.append(prediction);
                 sb.append("\n");
-                pwData.write(sb.toString());
-
             }
+            pwData.write(sb.toString());
             double testTimeSeconds = (double)testTime / 1_000_000_000.0;
             double accuracy = (double) numSamplesCorrect.get() / chunkInstances.size();
 
@@ -271,7 +269,7 @@ public class DSClassificationMOAConsumer {
             pwMetrics.close();
         }
 
-        String accuracy = "NOT KNOWN";//100.0 * (double) numSamplesCorrect.get() / (double) numSamples.get();
+        String accuracy = "UNKNOWN";//100.0 * (double) numSamplesCorrect.get() / (double) numSamples.get();
         System.out.println(classifierName + " processed " + numSamples.get() +
                 " instances from topic " + topicName + " with " + accuracy + " accuracy.");
         System.out.println("DONE");

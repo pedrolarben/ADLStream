@@ -8,6 +8,7 @@ import com.yahoo.labs.samoa.instances.Instances;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class DSJsonToMoaInstanceConverter implements Serializable {
 
         for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
             String key = it.next();
+
             if(!key.equalsIgnoreCase("class") && !key.equalsIgnoreCase("classes")){
                 keysList.add(key);
                 valuesList.add(rootNode.get(key).asDouble());
@@ -35,7 +37,11 @@ public class DSJsonToMoaInstanceConverter implements Serializable {
 
         // Add 'class' key and value
         keysList.add("class");
-        valuesList.add(rootNode.get("class").asDouble());
+        Double class_value = rootNode.get("class").asDouble();
+        if(class_value == -1.){
+            class_value = 0.;
+        }
+        valuesList.add(class_value);
 
         String attrNames[] = keysList.toArray(new String[0]);
         double attrValues[] = valuesList.stream().mapToDouble((d -> d)).toArray();
