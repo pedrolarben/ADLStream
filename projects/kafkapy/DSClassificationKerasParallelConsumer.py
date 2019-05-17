@@ -45,7 +45,7 @@ class Consumer:
         self.num_classes = None
         self.weights = None
         self.available = True
-        self.clf_name = '3_Dilated_Conv'
+        self.clf_name = 'keras_parallel_3_Dilated_Conv_pooling_'+str(num_batches_fed)+'x'+str(batch_size)
         self.average = 'weighted'
         self.loss_func = 'categorical_crossentropy'
         self.columns = None
@@ -283,13 +283,16 @@ def write_results_file(consumer):
 
 
 def create_cnn_model(num_features, num_classes, loss_func):
-    from keras.layers import Dense, Conv1D, Flatten, Dropout
+    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
     from keras.models import Input, Model
 
     inp = Input(shape=(num_features, 1), name='input')
     c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
+    c = MaxPool1D(pool_size=2)(c)
     c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
     c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
     c = Flatten()(c)
     c = Dense(512, activation='relu')(c)
     c = Dropout(0.2)(c)
@@ -378,7 +381,7 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
 
         x = np.expand_dims(np.array(window_x), axis=-1)
         #y = to_categorical(window_y, len(consumer.get_classes()))
-        print(window_y, consumer.get_classes())
+        #print(window_y, consumer.get_classes())
         y = label_binarize(window_y, consumer.get_classes())
         if consumer.get_num_classes()==2:
             y = np.eye(2)[y.flatten()]
@@ -565,7 +568,7 @@ def run(args):
     bootstrap_servers = args.bootstrap_servers.split(' ')
     topic = args.topic
     from_beginning = args.from_beginning
-    batch_size = args.batch_size
+    batch_size = int(args.batch_size)
     num_batches_fed = int(args.num_batches_fed)
     output_path = args.output_path
     debug = args.debug

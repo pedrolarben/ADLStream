@@ -6,11 +6,12 @@
 
 topics=(streams_TwoPatterns streams_CinCECGtorso streams_TwoLeadECG streams_Wafer streams_pendigits streams_FacesUCR streams_Mallat streams_FaceAll streams_Symbols streams_ItalyPowerDemand streams_ECG5000 streams_MoteStrain streams_NonInvasiveFetalECGThorax1 streams_NonInvasiveFetalECGThorax2 streams_SwedishLeaf streams_FordA streams_Yoga streams_UWaveGestureLibraryX streams_FordB streams_ElectricDevices streams_UWaveGestureLibraryY streams_UWaveGestureLibraryZ streams_HandOutlines streams_InsectWingbeatSound streams_ShapesAll streams_MedicalImages streams_PhalangesOutlinesCorrect streams_ChlorineConcentration streams_Phoneme)
 
-#topics=(streams_TwoPatterns streams_CinCECGtorso streams_TwoLeadECG streams_Wafer streams_Symbols streams_SwedishLeaf streams_Yoga streams_UWaveGestureLibraryX streams_ElectricDevices streams_UWaveGestureLibraryY streams_UWaveGestureLibraryZ streams_ShapesAll streams_ChlorineConcentration)
+topics=(streams_Symbols)
  
 
 for topic in ${topics[@]}; do
 	echo "Consuming $topic"
+	
 	#nohup mesos-execute --master=10.141.0.224:5050 --name="$topic sklearn consumer" --command="python3 /home/pedrolarben/datastream/dcos/volume0/aarcos/projects/kafkapy/DSClassificationConsumer.py --topic $topic --from_beginning" &
 	python ../projects/kafkapy/DSClassificationKerasParallelConsumer.py --topic $topic --from_beginning --bootstrap_servers localhost:9092 --debug True --two_gpu True --batch_size 5 --num_batches_fed 5
 	python ../projects/kafkapy/DSClassificationKerasParallelConsumer.py --topic $topic --from_beginning --bootstrap_servers localhost:9092 --debug True --two_gpu True --batch_size 5 --num_batches_fed 10
