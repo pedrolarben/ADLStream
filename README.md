@@ -213,6 +213,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 Here it is the original paper that you can cite to reference ADLStream
 * [Pedro Lara-Benitez, Manuel Carranza-garcía, et al. Asynchronous dual-pipeline deep learning
 framework for online data stream
-classification. Integrated Computer-Aided Engineering. 2019. In revision.]()
+classification. Integrated Computer-Aided Engineering. 2019. Under revision.]()
 
 
