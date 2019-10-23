@@ -20,9 +20,9 @@ ADLStream is a novel asynchronous  dual-pipeline deep  learning  framework  for 
 This system has two separated layers for training and testing that work simultaneously in order to provide quick predictions and perform frequent updates of the model. 
 The dual-layer architecture  allows  to  alleviate  the  computational  cost problem  of  complex  deep  learning  models,  such  as convolutional neural networks, for the data streaming context,  in  which  speed  is  essential.
 
-![ADLStream framework scheme.](https://github.com/pedrolarben/datastream-minerva/blob/master/doc/images/Parallel-NN.png)
-
-
+<p align="center">
+  <img width="451" height="368" src="https://github.com/pedrolarben/datastream-minerva/blob/master/doc/images/Parallel-NN.png">
+</p>
 
 ## API Docs <a name="api"></a>
 This project has a main function which implement the algorithm and two auxiliary functions which can be helpful for testing the software.
