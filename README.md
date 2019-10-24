@@ -29,7 +29,7 @@ This project has a main function which implement the algorithm and two auxiliary
 Here it is a brief description of these three functions
 
 ### runADLStream <a name="runADLStream"></a>
-This is the main function. It run the ADLStream algorithm. For more details about how ADLStream works, read [this article](#article).
+This is the main function. It run the ADLStream algorithm. For more details about how ADLStream works, read [this article](#research).
 ```python
 runADLStream(topic, create_model_func, two_gpu, batch_size, num_batches_fed, debug, output_path, from_beginning, time_out_ms, bootstrap_servers)
 ```
