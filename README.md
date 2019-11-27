@@ -20,16 +20,16 @@ ADLStream is a novel asynchronous  dual-pipeline deep  learning  framework  for 
 This system has two separated layers for training and testing that work simultaneously in order to provide quick predictions and perform frequent updates of the model. 
 The dual-layer architecture  allows  to  alleviate  the  computational  cost problem  of  complex  deep  learning  models,  such  as convolutional neural networks, for the data streaming context,  in  which  speed  is  essential.
 
-![ADLStream framework scheme.](https://github.com/pedrolarben/datastream-minerva/blob/master/doc/images/Parallel-NN.png)
-
-
+<p align="center">
+  <img width="451" height="368" src="https://github.com/pedrolarben/datastream-minerva/blob/master/doc/images/Parallel-NN.png">
+</p>
 
 ## API Docs <a name="api"></a>
 This project has a main function which implement the algorithm and two auxiliary functions which can be helpful for testing the software.
 Here it is a brief description of these three functions
 
 ### runADLStream <a name="runADLStream"></a>
-This is the main function. It run the ADLStream algorithm. For more details about how ADLStream works, read [this article](#article).
+This is the main function. It run the ADLStream algorithm. For more details about how ADLStream works, read [this article](#research).
 ```python
 runADLStream(topic, create_model_func, two_gpu, batch_size, num_batches_fed, debug, output_path, from_beginning, time_out_ms, bootstrap_servers)
 ```
@@ -213,6 +213,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 Here it is the original paper that you can cite to reference ADLStream
 * [Pedro Lara-Benitez, Manuel Carranza-garcía, et al. Asynchronous dual-pipeline deep learning
 framework for online data stream
-classification. Integrated Computer-Aided Engineering. 2019. In revision.]()
+classification. Integrated Computer-Aided Engineering. 2019. Under revision.]()
 
 
