@@ -7,6 +7,34 @@ import numpy as np
 import pandas as pd
 import glob
 import os
+from tqdm import tqdm
+
+def decode_class(c):
+    is_dataset = type(c) == type(pd.Series())
+    if is_dataset:
+        decoded = c.str.decode("utf-8") if type(c[0]) == type(b'') else c.astype('int').astype('str')
+    else:
+        decoded = c.decode("utf-8") if isinstance(c, (bytes, np.bytes_)) else str(int(c))
+
+    if is_dataset:
+        if 'class' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'level' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'group' in decoded[0]:
+            decoded = decoded.str.split('group', expand=True)[1]
+            decoded[decoded == 'A'] = 0
+            decoded[decoded == 'B'] = 1
+    else:
+        if 'class' in decoded:
+            decoded = decoded.split('class')[1]
+        elif 'group' in decoded:
+            decoded = decoded.split('group')[1]
+            decoded = 0 if decoded == 'A' else decoded
+            decoded = 1 if decoded == 'B' else decoded
+
+    return decoded
+
 
 
 def run(args):
@@ -25,17 +53,28 @@ def run(args):
         attributes = [x for x in meta]
         df = pd.DataFrame(data)
         class_name = 'class' if 'class' in df.columns else 'target'
-        classes = np.unique(df[class_name]).astype(np.int).tolist()
-        min_classes = min(classes)
 
-        for _, entry in enumerate(data):
-            record = {'classes': classes}
+        classes = np.unique(decode_class(df[class_name])).astype(np.int)
+        print(classes)
+        min_classes = min(classes)
+        classes = classes - min_classes
+        classes = [int(c) for c in classes]
+
+        for _, entry in tqdm(enumerate(data)):
+            record = {'classes': list(classes)}
             for _, attr in enumerate(attributes):
                 value = entry[attr]
-                if type(value) == np.bytes_:
-                    value = int(value.decode('UTF-8'))
                 if attr == class_name:
                     attr = 'class'
+                    value = int(decode_class(value)) - int(min_classes)
+
+                elif type(value) == np.bytes_:
+                    value = value.decode('UTF-8')
+
+                    if meta[attr][0] == 'nominal':
+                        #print(meta[attr], value)
+                        value = meta[attr][1].index(value)
+
                 record[attr] = value
             producer.send(topic, record)
         producer.close()

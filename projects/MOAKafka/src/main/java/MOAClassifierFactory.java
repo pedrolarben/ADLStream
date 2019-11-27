@@ -10,11 +10,16 @@ import moa.classifiers.functions.SPegasos;
 import moa.classifiers.meta.*;
 import moa.classifiers.trees.*;
 
+
 public class MOAClassifierFactory {
 
     public static Classifier getClassifier(String name){
 
-        if(name.equals(ActiveClassifier.class.getSimpleName())){
+        if(name.equals(AdaptiveRandomForest.class.getSimpleName())){
+            return new AdaptiveRandomForest();
+        }else if (name.equals(KUE.class.getSimpleName())){
+            return new KUE();
+        }else if(name.equals(ActiveClassifier.class.getSimpleName())){
             return new ActiveClassifier();
         }else if(name.equals(NaiveBayes.class.getSimpleName())){
             return new NaiveBayes();

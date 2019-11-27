@@ -13,11 +13,108 @@ import numpy as np
 import pandas as pd
 
 
+def create_cnn_1_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Flatten()(c)
+    c = Dense(512, activation='relu')(c)
+    c = Dropout(0.2)(c)
+    c = Dense(128, activation='relu')(c)
+    c = Dropout(0.2)(c)
+    c = Dense(num_classes, activation="softmax", name="prediction")(c)
+    model = Model(inp, c)
+
+    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+    return model
+
+def create_cnn_2_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    c = Conv1D(32, 5, padding='same', activation='relu', dilation_rate=3)(inp)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Conv1D(64, 3, padding='same', activation='relu', dilation_rate=3)(c)
+    c = Flatten()(c)
+    c = Dense(128, activation='relu')(c)
+    c = Dropout(0.2)(c)
+    c = Dense(num_classes, activation="softmax", name="prediction")(c)
+    model = Model(inp, c)
+
+    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+    return model
+
+
+def create_mlp_1_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Flatten
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    x = Flatten()(inp)
+    x = Dense(136, activation='relu')(x)
+    x = Dense(84, activation='relu')(x)
+    x = Dense(num_classes, activation="softmax", name="prediction")(x)
+    model = Model(inp, x)
+
+    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+    return model
+
+def create_mlp_2_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Flatten
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    x = Flatten()(inp)
+    x = Dense(16, activation='relu')(x)
+    x = Dense(10, activation='relu')(x)
+    x = Dense(num_classes, activation="softmax", name="prediction")(x)
+    model = Model(inp, x)
+
+    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+    return model
+
+def create_mlp_3_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Flatten
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    x = Flatten()(inp)
+    x = Dense(60, activation='relu')(x)
+    x = Dense(180, activation='relu')(x)
+    x = Dense(60, activation='relu')(x)
+    x = Dense(num_classes, activation="softmax", name="prediction")(x)
+    model = Model(inp, x)
+
+    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+    return model
+
+model_factory = {
+    'cnn1': create_cnn_1_model,
+    'cnn2': create_cnn_2_model,
+    'mlp1': create_mlp_1_model,
+    'mlp2': create_mlp_2_model,
+    'mlp3': create_mlp_3_model,
+}
+
 # Object shared among processes
 class Consumer:
 
-    def __init__(self, batch_size=10, num_batches_fed=40, topic='', results_path='./', bootstrap_servers=None,
+    def __init__(self, model_name='cnn1', batch_size=10, num_batches_fed=40, topic='', results_path='./', bootstrap_servers=None,
                  from_beginning=False, debug=True, two_gpu=False):
+        self.model_name = model_name
         self.batch_size = batch_size
         self.num_batches_fed = num_batches_fed
         self.topic = topic
@@ -45,11 +142,13 @@ class Consumer:
         self.num_classes = None
         self.weights = None
         self.available = True
-        self.clf_name = 'keras_parallel_3_Dilated_Conv_pooling_'+str(num_batches_fed)+'x'+str(batch_size)
+        self.clf_name = self.model_name + '_' + str(num_batches_fed) + 'x' + str(batch_size)
+        #self.clf_name = 'keras_parallel_3_Dilated_Conv_pooling_'+str(num_batches_fed)+'x'+str(batch_size)
         self.average = 'weighted'
         self.loss_func = 'categorical_crossentropy'
         self.columns = None
         self.classes = None
+        self.first_history = 0
 
     def add(self, ls):
         if not self.initial_training_set:
@@ -64,6 +163,9 @@ class Consumer:
         self.buffer.pop(0)
         self.count = self.count + 1
         return res
+
+    def get_model_name(self):
+        return self.model_name
 
     def is_time_out(self):
         return self.time_out
@@ -101,12 +203,36 @@ class Consumer:
     def get_history(self):
         return self.history[self.data_set_name]
 
+    def is_first_history(self):
+        if self.first_history<2:
+            self.first_history += 1
+            return True
+        else:
+            return False
+
     def append_history(self, k, v):
+        dir_name = os.path.dirname(__file__)
+        file_path = os.path.join(dir_name, self.get_results_path(), 'ADLStream_' + self.get_clf_name())
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
+        file_path = os.path.join(file_path, k + '.csv')
+        if self.is_first_history():
+            with open(file_path, 'w') as fd:
+                fd.write(','.join([str(c) for c in v.columns])+'\n')
         if k == 'metrics':
-            self.history[self.data_set_name]['metrics'] = self.history[self.data_set_name]['metrics'].append(v,
-                                                                                                             ignore_index=True)
+            #self.history[self.data_set_name]['metrics'] = self.history[self.data_set_name]['metrics'].append(v, ignore_index=True)
+            #file_path = os.path.join(file_path, k, '.csv')
+            values = v.values if len(v.values.shape)>1 else v.values.reshape((1,v.values.shape[0]))
+            values_csv = '\n'.join([ ','.join([str(c) for c in r]) for r in values])+'\n'
+            with open(file_path, 'a') as fd:
+                fd.write(values_csv)
         elif k == 'data':
-            self.history[self.data_set_name][k] = pd.concat((self.history[self.data_set_name][k], v), ignore_index=True)
+            #self.history[self.data_set_name][k] = pd.concat((self.history[self.data_set_name][k], v), ignore_index=True)
+            #file_path = os.path.join(file_path, k, '.csv')
+            values = v.values if len(v.values.shape) > 1 else v.values.reshape((1, v.values.shape[0]))
+            values_csv = '\n'.join([','.join([str(c) for c in r]) for r in values]) + '\n'
+            with open(file_path, 'a') as fd:
+                fd.write(values_csv)
         else:
             raise Exception("history key must be 'data' or 'metrics'")
 
@@ -236,6 +362,7 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
         x = x.reshape(x.shape[0], -1)
 
     records = pd.DataFrame(np.hstack((x, y.reshape(-1, 1), y_pred.reshape(-1, 1))))
+    records.columns = consumer.get_columns()
     consumer.append_history('data', records)
 
     prec, recall, fbeta, support = metrics.precision_recall_fscore_support(y, y_pred, average=consumer.get_average())
@@ -248,62 +375,38 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
     except ValueError as ve:
         tn, fp, fn, tp = conf_matrix[0][0], 0, 0, 0
 
-    metrics_record = pd.Series({
-        'total': len(consumer.get_history()['data']),
-        'tn': tn,
-        'fp': fp,
-        'fn': fn,
-        'tp': tp,
-        'precision': prec,
-        'recall': recall,
-        'f1': f1_score,
-        'fbeta': fbeta,
-        'accuracy': accuracy,
-        'train_time': train_time,
-        'test_time': test_time
+    metrics_record = pd.DataFrame({
+        'total': [len(consumer.get_history()['data'])],
+        'tn': [tn],
+        'fp': [fp],
+        'fn': [fn],
+        'tp': [tp],
+        'precision': [prec],
+        'recall': [recall],
+        'f1': [f1_score],
+        'fbeta': [fbeta],
+        'accuracy': [accuracy],
+        'train_time': [train_time],
+        'test_time': [test_time]
     })
-    # history[clf_name]['metrics'] = history[clf_name]['metrics'].append(metrics_record, ignore_index=True)
     consumer.append_history('metrics', metrics_record)
 
 
 # Create results files
 def write_results_file(consumer):
     dir_name = os.path.dirname(__file__)
-    file_path = os.path.join(dir_name, consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
+    #file_path = os.path.join(dir_name, consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
+    file_path = os.path.join(dir_name, consumer.get_results_path(), 'ADLStream_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     history_data = consumer.get_history()['data']
     history_data.columns = consumer.get_columns()
-    history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
-    consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'metrics.csv'),
-                                             columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
-                                                      'recall', 'f1', 'fbeta',
-                                                      'accuracy', 'train_time', 'test_time'),
-                                             index=False)
-
-
-def create_cnn_model(num_features, num_classes, loss_func):
-    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
-    from keras.models import Input, Model
-
-    inp = Input(shape=(num_features, 1), name='input')
-    c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Flatten()(c)
-    c = Dense(512, activation='relu')(c)
-    c = Dropout(0.2)(c)
-    c = Dense(128, activation='relu')(c)
-    c = Dropout(0.2)(c)
-    c = Dense(num_classes, activation="softmax", name="prediction")(c)
-    model = Model(inp, c)
-
-    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
-    return model
-
+    # history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
+    # consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'metrics.csv'),
+    #                                          columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
+    #                                                   'recall', 'f1', 'fbeta',
+    #                                                   'accuracy', 'train_time', 'test_time'),
+    #                                          index=False)
 
 def train_model(x_train, y_train, consumer, model, index=-1, device=None):
 
@@ -315,6 +418,7 @@ def train_model(x_train, y_train, consumer, model, index=-1, device=None):
     # Train
     if consumer.get_debug():
         print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
+
     train_time_start = time.time()
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
@@ -340,18 +444,21 @@ def classify(model, input_data):
 
 # DNN training process
 def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
-    import tensorflow as tf
-    from keras import backend as K
+    #import tensorflow as tf
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
+    #from keras import backend as K
     from keras.utils import to_categorical
 
-    device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
+    device = '/device:GPU:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
 
     session_conf = tf.ConfigProto(log_device_placement=True)
     session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
-    K.set_session(sess)
+    tf.keras.backend.set_session(sess)
 
-    with K.tf.device(device):
+    with tf.device(device):
 
 
 
@@ -390,8 +497,8 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
         consumer.set_num_features(x.shape[1])
 
         # create model, train it and save the weights.
-        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                 consumer.get_loss_function())
+        model = model_factory[consumer.get_model_name()](consumer.get_num_features(), consumer.get_num_classes(),
+                                      consumer.get_loss_function())
         with lock_training_data:
             x_train, y_train = consumer.get_training_data()
         train_model(x_train, y_train, consumer, model, index, device)
@@ -407,18 +514,21 @@ def dnn_train(index, consumer, lock_messages, lock_train, lock_training_data):
 
 # DNN classifying process
 def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data):
-    import tensorflow as tf
-    from keras import backend as K
+    # import tensorflow as tf
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
+    #from tensorflow.compat.v1.keras import backend as K
     from keras.utils import to_categorical
 
-    device = '/gpu:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
+    device = '/device:GPU:' + str(index) if consumer.is_two_gpu() else '/cpu:0'
 
     session_conf = tf.ConfigProto(log_device_placement=True)
     session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
-    K.set_session(sess)
+    tf.keras.backend.set_session(sess)
 
-    with K.tf.device(device):
+    with tf.device(device):
 
         window_y, window_x = [], []
         batch_size = consumer.get_batch_size()
@@ -437,8 +547,8 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
             pass
 
         # create model and load weights
-        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                 consumer.get_loss_function())
+        model = model_factory[consumer.get_model_name()](consumer.get_num_features(), consumer.get_num_classes(),
+                                      consumer.get_loss_function())
         model.set_weights(consumer.get_weights())
 
         # Main loop
@@ -568,6 +678,7 @@ def run(args):
     bootstrap_servers = args.bootstrap_servers.split(' ')
     topic = args.topic
     from_beginning = args.from_beginning
+    model_name = args.model
     batch_size = int(args.batch_size)
     num_batches_fed = int(args.num_batches_fed)
     output_path = args.output_path
@@ -577,7 +688,7 @@ def run(args):
     BaseManager.register('Consumer', Consumer)
     manager = BaseManager()
     manager.start()
-    consumer = manager.Consumer(batch_size=batch_size, num_batches_fed=num_batches_fed, results_path=output_path, topic=topic,
+    consumer = manager.Consumer(model_name=model_name ,batch_size=batch_size, num_batches_fed=num_batches_fed, results_path=output_path, topic=topic,
                                 bootstrap_servers=bootstrap_servers, from_beginning=from_beginning, debug=debug, two_gpu=two_gpu)
     lock_messages = Lock()
     lock_train = Lock()
@@ -631,6 +742,10 @@ if __name__ == '__main__':
     parser.add_argument("--two_gpu",
                         help="whether it has at least two GPU",
                         default=False)
+
+    parser.add_argument("--model",
+                        help="DL model to use for prediction",
+                        default='cnn1')
 
     args = parser.parse_args()
     print(args)
