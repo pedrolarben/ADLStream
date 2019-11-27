@@ -7,16 +7,14 @@ import com.yahoo.labs.samoa.instances.Instances;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class DSJsonToMoaInstanceConverter implements Serializable {
 
     private String datasetName;
     private List<String> keysList = new ArrayList<>();
     private List<Double> valuesList =  new ArrayList<>();
+    private List<Double> classes =  new ArrayList<>();
 
     public DSJsonToMoaInstanceConverter(String datasetName) {
         this.datasetName = datasetName;
@@ -28,7 +26,11 @@ public class DSJsonToMoaInstanceConverter implements Serializable {
 
         for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
             String key = it.next();
-
+            if (key.equalsIgnoreCase("classes" )){
+                for (int k = 0; k<rootNode.get(key).size(); k++){
+                    classes.add(rootNode.get(key).get(k).asDouble());
+                }
+            }
             if(!key.equalsIgnoreCase("class") && !key.equalsIgnoreCase("classes")){
                 keysList.add(key);
                 valuesList.add(rootNode.get(key).asDouble());
@@ -51,7 +53,16 @@ public class DSJsonToMoaInstanceConverter implements Serializable {
         List<Attribute> attInfo = new ArrayList<Attribute>();
 
         for(int i = 0; i < attrValues.length; ++i) {
-            Attribute attr = new Attribute(attrNames[i]);
+            Attribute attr = null;
+            if(attrNames[i] == "class") {
+                List<String> classes_values = new ArrayList<>();
+                for (Double c : classes)
+                    classes_values.add(c.toString());
+                attr = new Attribute(attrNames[i], classes_values);
+            }
+            else {
+                attr = new Attribute(attrNames[i]);
+            }
             attInfo.add(attr);
         }
 

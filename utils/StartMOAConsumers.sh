@@ -1,6 +1,8 @@
 #!/bin/bash
 
-java -jar ../projects/MOAKafka/out/artifacts/MOAKafka_jar/MOAKafka.jar localhost:9092 ../DSClassificationResults/DSClassificationResults_MOA
+java -jar ../projects/MOAKafka/out/artifacts/MOAKafka_jar/MOAKafka.jar localhost:9092 ../DSClassificationResults/ConceptDriftExperimentsResults
+#DSClassificationResults_MOA 
+
 
 #output_dir_path=../DSClassificationResults
 #classifiers=(ActiveClassifier NaiveBayes SingleClassifierDrift MajorityClass Perceptron SGD SPegasos LeveragingBag OCBoost OzaBag OzaBagASHT OzaBagAdwin OzaBoost OzaBoostAdwin WeightedMajorityAlgorithm DecisionStump HoeffdingOptionTree AdaHoeffdingOptionTree HoeffdingTree ASHoeffdingTree HoeffdingAdaptiveTree RandomHoeffdingTree)
