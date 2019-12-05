@@ -1,7 +1,7 @@
 #!/bin/bash
 
 java -jar ../projects/MOAKafka/out/artifacts/MOAKafka_jar/MOAKafka.jar localhost:9092 ../DSClassificationResults/ConceptDriftExperimentsResults
-#DSClassificationResults_MOA 
+#ConceptDriftExperimentsResults DSClassificationResults_MOA 
 
 
 #output_dir_path=../DSClassificationResults

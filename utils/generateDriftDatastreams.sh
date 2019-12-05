@@ -121,6 +121,17 @@ WriteStreamToARFFFile
 	-f /media/hd1/plara/datastream-minerva/datasets_drift/ARGWa-F1F10.arff 
 	-m 1000000
 "
+java -cp ~/snap/moa/lib/moa.jar moa.DoTask "
+WriteStreamToARFFFile 
+	-s (ConceptDriftStream 
+		-s generators.AgrawalGenerator 
+		-d (generators.AgrawalGenerator 
+			-f 4) 
+		-p 500000 
+		-w 1) 
+	-f /media/hd1/plara/datastream-minerva/datasets_drift/ARGWa-F1F4.arff 
+	-m 1000000
+"
 
 ### ARGWa-F2F5F8
 java -cp ~/snap/moa/lib/moa.jar moa.DoTask "
@@ -177,6 +188,29 @@ WriteStreamToARFFFile
 		-w 1) 
 	-f /media/hd1/plara/datastream-minerva/datasets_drift/SEAa-F2F4.arff 
 	-m 1000000
+"
+
+### SEAa-F2F4
+java -cp ~/snap/moa/lib/moa.jar moa.DoTask "
+WriteStreamToARFFFile 
+	-s (ConceptDriftStream 
+		-s (generators.SEAGenerator 
+			-f 2) 
+		-d (generators.SEAGenerator 
+			-f 4) 
+		-p 500000 
+		-w 1) 
+	-f /media/hd1/plara/datastream-minerva/datasets_drift/SEAa-F2F4.arff 
+	-m 1000000
+"
+
+### LED-4
+java -cp ~/snap/moa/lib/moa.jar moa.DoTask"
+WriteStreamToARFFFile 
+        -s (generators.LEDGeneratorDrift 
+                -d 4) 
+        -f /media/hd1/plara/datastream-minerva/datasets_drift/LED-4.arff 
+        -m 1000000
 "
 
 
@@ -274,6 +308,17 @@ WriteStreamToARFFFile
 		-p 500000 
 		-w 100000) 
 	-f /media/hd1/plara/datastream-minerva/datasets_drift/ARGWg-F1F10.arff 
+	-m 1000000
+"
+java -cp ~/snap/moa/lib/moa.jar moa.DoTask "
+WriteStreamToARFFFile 
+	-s (ConceptDriftStream 
+		-s generators.AgrawalGenerator 
+		-d (generators.AgrawalGenerator 
+			-f 4) 
+		-p 500000 
+		-w 100000) 
+	-f /media/hd1/plara/datastream-minerva/datasets_drift/ARGWg-F1F4.arff 
 	-m 1000000
 "
 
