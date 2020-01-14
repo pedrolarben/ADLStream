@@ -14,9 +14,14 @@ import numpy as np
 import pandas as pd
 import scipy.io.arff as arff
 
-def create_cnn_model11(num_features, num_classes, loss_func):
+import tensorflow as tf
+from tensorflow.keras import layers, Input, Model
+
+# tf.debugging.set_log_device_placement(True)
+
+def create_cnn_model(num_features, num_classes, loss_func):
     # import tensorflow as tf
-    from tensorflow.keras import layers, Input, Model
+    # from tensorflow.keras import layers, Input, Model
     # from keras import layers
     # tf.enable_eager_execution()
 
@@ -38,28 +43,28 @@ def create_cnn_model11(num_features, num_classes, loss_func):
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-def create_cnn_model(num_features, num_classes, loss_func):
-
-    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
-    from keras.models import Input, Model
-
-    inp = Input(shape=(num_features, 1), name='input')
-    c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
-    c = MaxPool1D(pool_size=2)(c)
-    c = Flatten()(c)
-    c = Dense(512, activation='relu')(c)
-    c = Dropout(0.2)(c)
-    c = Dense(128, activation='relu')(c)
-    c = Dropout(0.2)(c)
-    c = Dense(num_classes, activation="softmax", name="prediction")(c)
-    model = Model(inp, c)
-
-    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
-    return model
+# def create_cnn_model11(num_features, num_classes, loss_func):
+#
+#     # from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
+#     # from keras.models import Input, Model
+#
+#     inp = Input(shape=(num_features, 1), name='input')
+#     c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
+#     c = MaxPool1D(pool_size=2)(c)
+#     c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
+#     c = MaxPool1D(pool_size=2)(c)
+#     c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
+#     c = MaxPool1D(pool_size=2)(c)
+#     c = Flatten()(c)
+#     c = Dense(512, activation='relu')(c)
+#     c = Dropout(0.2)(c)
+#     c = Dense(128, activation='relu')(c)
+#     c = Dropout(0.2)(c)
+#     c = Dense(num_classes, activation="softmax", name="prediction")(c)
+#     model = Model(inp, c)
+#
+#     model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
+#     return model
 
 
 # Object shared among processes
@@ -390,13 +395,13 @@ def classify(model, input_data):
 
 # DNN training process
 def dnn_train(index, consumer, lock_training_data):
-    import tensorflow as tf
+    # import tensorflow as tf
     # import tensorflow.compat.v1 as tf
     # tf.disable_v2_behavior()
 
 
     # # Specify GPU to use
-    # gpus = tf.config.experimental.list_physical_devices('GPU')
+    gpus = tf.config.experimental.list_physical_devices('GPU')
     # if len(gpus) >= 2:
     #     device = gpus[0]
     #     tf.config.experimental.set_memory_growth(device, True)
@@ -411,7 +416,7 @@ def dnn_train(index, consumer, lock_training_data):
     #     print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
     #     print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
 
-    device_name = '/CPU:0'
+    device_name = '/GPU:0'
 
 
     # session_conf = tf.ConfigProto(log_device_placement=True)
@@ -454,7 +459,9 @@ def dnn_train(index, consumer, lock_training_data):
         consumer.set_num_features(x.shape[1])
 
         # create model, train it and save the weights.
-        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+
+        # model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
 
         with lock_training_data:
             x_train, y_train = consumer.get_training_data()
@@ -513,8 +520,10 @@ def dnn_classify(index, consumer, lock_messages, lock_training_data):
             pass
 
         # create model and load weights
-        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                      consumer.get_loss_function())
+        # model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
+        #                               consumer.get_loss_function())
+        model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+
         model.set_weights(consumer.get_weights())
 
         # Main loop
