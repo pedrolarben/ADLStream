@@ -17,14 +17,8 @@ import scipy.io.arff as arff
 import tensorflow as tf
 from tensorflow.keras import layers, Input, Model
 
-# tf.debugging.set_log_device_placement(True)
 
 def create_cnn_model(num_features, num_classes, loss_func):
-    # import tensorflow as tf
-    # from tensorflow.keras import layers, Input, Model
-    # from keras import layers
-    # tf.enable_eager_execution()
-
     inp = Input(shape=(num_features, 1), name='input')
     c = layers.Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
     c = layers.MaxPool1D(pool_size=2)(c)
@@ -43,28 +37,6 @@ def create_cnn_model(num_features, num_classes, loss_func):
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-# def create_cnn_model11(num_features, num_classes, loss_func):
-#
-#     # from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
-#     # from keras.models import Input, Model
-#
-#     inp = Input(shape=(num_features, 1), name='input')
-#     c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
-#     c = MaxPool1D(pool_size=2)(c)
-#     c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
-#     c = MaxPool1D(pool_size=2)(c)
-#     c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
-#     c = MaxPool1D(pool_size=2)(c)
-#     c = Flatten()(c)
-#     c = Dense(512, activation='relu')(c)
-#     c = Dropout(0.2)(c)
-#     c = Dense(128, activation='relu')(c)
-#     c = Dropout(0.2)(c)
-#     c = Dense(num_classes, activation="softmax", name="prediction")(c)
-#     model = Model(inp, c)
-#
-#     model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
-#     return model
 
 
 # Object shared among processes
@@ -360,9 +332,10 @@ def write_results_file(consumer):
     file_path = os.path.join(dir_name, consumer.get_results_path(), 'ADLStream_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-    history_data = consumer.get_history()['data']
-    history_data.columns = consumer.get_columns()
-    dir_name = os.path.dirname(__file__)
+    # history_data = consumer.get_history()['data']
+    # print(history_data)
+    # history_data.columns = consumer.get_columns()
+    # dir_name = os.path.dirname(__file__)
 
 
 
@@ -395,34 +368,17 @@ def classify(model, input_data):
 
 # DNN training process
 def dnn_train(index, consumer, lock_training_data):
-    # import tensorflow as tf
-    # import tensorflow.compat.v1 as tf
-    # tf.disable_v2_behavior()
-
-
     # # Specify GPU to use
     gpus = tf.config.experimental.list_physical_devices('GPU')
-    # if len(gpus) >= 2:
-    #     device = gpus[0]
-    #     tf.config.experimental.set_memory_growth(device, True)
-    #     tf.config.experimental.set_visible_devices(device, 'GPU')
-    #     device_name = device[0]
-    # else:
-    #     # device = gpus[0]
-    #     # tf.config.experimental.set_memory_growth(device, True)
-    #     # tf.config.experimental.set_visible_devices(device, 'GPU')
-    #     # device_name = device[0]
-    #     device_name = '/CPU:0'
-    #     print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
-    #     print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-
-    device_name = '/GPU:0'
-
-
-    # session_conf = tf.ConfigProto(log_device_placement=True)
-    # session_conf.gpu_options.allow_growth = True
-    # sess = tf.Session(config=session_conf)
-    # tf.keras.backend.set_session(sess)
+    if len(gpus) >= 2:
+        device = gpus[0]
+        tf.config.experimental.set_memory_growth(device, True)
+        tf.config.experimental.set_visible_devices(device, 'GPU')
+        device_name = device[0]
+    else:
+        device_name = '/GPU:0'
+        print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
+        print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
 
     with tf.device(device_name):
 
@@ -468,7 +424,6 @@ def dnn_train(index, consumer, lock_training_data):
         train_model(x_train, y_train, consumer, model, index, device_name)
 
         # Main loop
-        print(consumer.is_finished())
         while not consumer.is_finished():
             with lock_training_data:
                 x_train, y_train = consumer.get_training_data()
@@ -478,30 +433,21 @@ def dnn_train(index, consumer, lock_training_data):
 
 # DNN classifying process
 def dnn_classify(index, consumer, lock_messages, lock_training_data):
-    import tensorflow as tf
     #
     # Specify GPU to use
-    # gpus = tf.config.experimental.list_physical_devices('GPU')
-    # if len(gpus) >= 2:
-    #     device = gpus[1]
-    #     tf.config.experimental.set_memory_growth(device, True)
-    #     tf.config.experimental.set_visible_devices(device, 'GPU')
-    #     device_name = device[0]
-    # else:
-    #     # device = gpus[0]
-    #     # tf.config.experimental.set_memory_growth(device, True)
-    #     # tf.config.experimental.set_visible_devices(device, 'GPU')
-    #     device_name = "/GPU:0"
-    #     print("ERROR - CLASSIFYING PROCESS: ADLStream needs at least 2 GPUs.")
-    #     print("ERROR - CLASSIFYING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-    #     # consumer.set_finished()
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if len(gpus) >= 2:
+        device = gpus[1]
+        tf.config.experimental.set_memory_growth(device, True)
+        tf.config.experimental.set_visible_devices(device, 'GPU')
+        device_name = device[0]
+    else:
+        device_name = "/CPU:0"
+        print("ERROR - CLASSIFYING PROCESS: ADLStream needs at least 2 GPUs.")
+        print("ERROR - CLASSIFYING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
+        # consumer.set_finished()
 
-    device_name = "/CPU:0"
 
-    # session_conf = tf.ConfigProto(log_device_placement=True)
-    # session_conf.gpu_options.allow_growth = True
-    # sess = tf.Session(config=session_conf)
-    # tf.keras.backend.set_session(sess)
 
     with tf.device(device_name):
 
@@ -538,9 +484,10 @@ def dnn_classify(index, consumer, lock_messages, lock_training_data):
                     consumer.set_finished()
                     if consumer.get_debug():
                         print("P" + str(index) + ": Finish")
+                    print(y_pred_history)
                     if y_pred_history is not None:
                         save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, 0.)
-                    write_results_file(consumer)
+                    # TODO: WHY????? write_results_file(consumer)
                     break
                 # ToDo: what if time_out is not True (wait? continue asking?)
                 if not consumer.is_time_out():
