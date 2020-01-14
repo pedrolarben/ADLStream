@@ -399,8 +399,10 @@ def write_results_file(consumer):
     file_path = os.path.join(dir_name, consumer.get_results_path(), 'ADLStream_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
+
     history_data = consumer.get_history()['data']
     history_data.columns = consumer.get_columns()
+
     # history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
     # consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'metrics.csv'),
     #                                          columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
@@ -528,7 +530,7 @@ def dnn_classify(index, consumer, lock_messages, lock_train, lock_training_data)
     sess = tf.Session(config=session_conf)
     tf.keras.backend.set_session(sess)
 
-    with tf.device(device):
+    with tf.device('/cpu:0'):
 
         window_y, window_x = [], []
         batch_size = consumer.get_batch_size()

@@ -14,12 +14,13 @@ import numpy as np
 import pandas as pd
 import scipy.io.arff as arff
 
+def create_cnn_model11(num_features, num_classes, loss_func):
+    # import tensorflow as tf
+    from tensorflow.keras import layers, Input, Model
+    # from keras import layers
+    # tf.enable_eager_execution()
 
-def create_cnn_model(num_features, num_classes, loss_func):
-    from tensorflow import keras
-    from tensorflow.keras import layers
-
-    inp = keras.Input(shape=(num_features, 1), name='input')
+    inp = Input(shape=(num_features, 1), name='input')
     c = layers.Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
     c = layers.MaxPool1D(pool_size=2)(c)
     c = layers.Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
@@ -32,10 +33,34 @@ def create_cnn_model(num_features, num_classes, loss_func):
     c = layers.Dense(128, activation='relu')(c)
     c = layers.Dropout(0.2)(c)
     c = layers.Dense(num_classes, activation="softmax", name="prediction")(c)
-    model = keras.Model(inp, c)
+    model = Model(inp, c)
+
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+
+def create_cnn_model(num_features, num_classes, loss_func):
+
+    from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
+    from keras.models import Input, Model
+
+    inp = Input(shape=(num_features, 1), name='input')
+    c = Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
+    c = MaxPool1D(pool_size=2)(c)
+    c = Flatten()(c)
+    c = Dense(512, activation='relu')(c)
+    c = Dropout(0.2)(c)
+    c = Dense(128, activation='relu')(c)
+    c = Dropout(0.2)(c)
+    c = Dense(num_classes, activation="softmax", name="prediction")(c)
+    model = Model(inp, c)
 
     model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
     return model
+
 
 # Object shared among processes
 class Consumer:
@@ -77,6 +102,8 @@ class Consumer:
         self.columns = None
         self.classes = None
         self.prequential_kappa = None
+        self.first_history = 0
+
 
     def add(self, ls):
         if not self.initial_training_set:
@@ -127,6 +154,13 @@ class Consumer:
 
     def get_history(self):
         return self.history[self.data_set_name]
+
+    def is_first_history(self):
+        if self.first_history<2:
+            self.first_history += 1
+            return True
+        else:
+            return False
 
     def write_history_metrics(self, k, v):
         dir_name = os.path.dirname(__file__)
@@ -250,7 +284,8 @@ class Consumer:
 
     def create_model(self, num_features, num_classes, loss_func):
         try:
-            return self.create_model_func(num_features, num_classes, loss_func)
+            model = self.create_model_func(num_features, num_classes, loss_func)
+            return model
         except Exception:
             raise ValueError('Create-model function is not well defined')
 
@@ -272,46 +307,44 @@ def read_message(consumer):
 
 # Save Metrics
 def save_history(consumer, x, y, y_pred, test_time, train_time):
-
+    # print(y_pred)
+    # print(y)
     y_pred = np.argmax(y_pred, axis=1)
     y = np.argmax(y, axis=1)
+    # print(y_pred)
+    # print(y)
 
     x = np.array(x)
     if len(x.shape) == 3:
         x = x.reshape(x.shape[0], -1)
 
-    records = pd.DataFrame(np.hstack((y.reshape(-1, 1), y_pred.reshape(-1, 1))))
-    records.columns = list(consumer.get_columns())[-2:]
+    records = pd.DataFrame(np.hstack((x, y.reshape(-1, 1), y_pred.reshape(-1, 1))))
+    records.columns = consumer.get_columns()
     consumer.write_history_metrics('data', records)
 
     prec, recall, fbeta, support = metrics.precision_recall_fscore_support(y, y_pred, average=consumer.get_average())
     accuracy = metrics.accuracy_score(y, y_pred)
     f1_score = metrics.f1_score(y, y_pred, average='weighted')
     conf_matrix = metrics.confusion_matrix(y, y_pred)
-    kappa = metrics.cohen_kappa_score(y,y_pred)
-    preq_kappa = consumer.update_prequential_kappa(kappa)
 
     try:
         tn, fp, fn, tp = conf_matrix.ravel()
     except ValueError as ve:
         tn, fp, fn, tp = conf_matrix[0][0], 0, 0, 0
 
-    metrics_record = pd.Series({
-        'total': consumer.get_count(),
-        'num_instances': len(records),
-        'tn': tn,
-        'fp': fp,
-        'fn': fn,
-        'tp': tp,
-        'precision': prec,
-        'recall': recall,
-        'f1': f1_score,
-        'fbeta': fbeta,
-        'accuracy': accuracy,
-        'kappa': kappa,
-        'preq_kappa': preq_kappa,
-        'train_time': train_time,
-        'test_time': test_time
+    metrics_record = pd.DataFrame({
+        'total': [len(consumer.get_history()['data'])],
+        'tn': [tn],
+        'fp': [fp],
+        'fn': [fn],
+        'tp': [tp],
+        'precision': [prec],
+        'recall': [recall],
+        'f1': [f1_score],
+        'fbeta': [fbeta],
+        'accuracy': [accuracy],
+        'train_time': [train_time],
+        'test_time': [test_time]
     })
     consumer.write_history_metrics('metrics', metrics_record)
 
@@ -330,8 +363,8 @@ def write_results_file(consumer):
 
 def train_model(x_train, y_train, consumer, model, index=-1, device=None):
     # Train
-    if consumer.get_debug():
-        print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
+    # if consumer.get_debug():
+    print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
     train_time_start = time.time()
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
@@ -358,18 +391,33 @@ def classify(model, input_data):
 # DNN training process
 def dnn_train(index, consumer, lock_training_data):
     import tensorflow as tf
+    # import tensorflow.compat.v1 as tf
+    # tf.disable_v2_behavior()
 
-    # Specify GPU to use
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if len(gpus) >= 2:
-        device = gpus[0]
-        tf.config.experimental.set_memory_growth(device, True)
-        tf.config.experimental.set_visible_devices(device, 'GPU')
-        device_name = device[0]
-    else:
-        print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
-        print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-        return
+
+    # # Specify GPU to use
+    # gpus = tf.config.experimental.list_physical_devices('GPU')
+    # if len(gpus) >= 2:
+    #     device = gpus[0]
+    #     tf.config.experimental.set_memory_growth(device, True)
+    #     tf.config.experimental.set_visible_devices(device, 'GPU')
+    #     device_name = device[0]
+    # else:
+    #     # device = gpus[0]
+    #     # tf.config.experimental.set_memory_growth(device, True)
+    #     # tf.config.experimental.set_visible_devices(device, 'GPU')
+    #     # device_name = device[0]
+    #     device_name = '/CPU:0'
+    #     print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
+    #     print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
+
+    device_name = '/CPU:0'
+
+
+    # session_conf = tf.ConfigProto(log_device_placement=True)
+    # session_conf.gpu_options.allow_growth = True
+    # sess = tf.Session(config=session_conf)
+    # tf.keras.backend.set_session(sess)
 
     with tf.device(device_name):
 
@@ -406,13 +454,14 @@ def dnn_train(index, consumer, lock_training_data):
         consumer.set_num_features(x.shape[1])
 
         # create model, train it and save the weights.
-        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                      consumer.get_loss_function())
+        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+
         with lock_training_data:
             x_train, y_train = consumer.get_training_data()
         train_model(x_train, y_train, consumer, model, index, device_name)
 
         # Main loop
+        print(consumer.is_finished())
         while not consumer.is_finished():
             with lock_training_data:
                 x_train, y_train = consumer.get_training_data()
@@ -423,19 +472,29 @@ def dnn_train(index, consumer, lock_training_data):
 # DNN classifying process
 def dnn_classify(index, consumer, lock_messages, lock_training_data):
     import tensorflow as tf
-
+    #
     # Specify GPU to use
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if len(gpus) >= 2:
-        device = gpus[1]
-        tf.config.experimental.set_memory_growth(device, True)
-        tf.config.experimental.set_visible_devices(device, 'GPU')
-        device_name = device[0]
-    else:
-        print("ERROR - CLASSIFYING PROCESS: ADLStream needs at least 2 GPUs.")
-        print("ERROR - CLASSIFYING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-        consumer.set_finished()
-        return
+    # gpus = tf.config.experimental.list_physical_devices('GPU')
+    # if len(gpus) >= 2:
+    #     device = gpus[1]
+    #     tf.config.experimental.set_memory_growth(device, True)
+    #     tf.config.experimental.set_visible_devices(device, 'GPU')
+    #     device_name = device[0]
+    # else:
+    #     # device = gpus[0]
+    #     # tf.config.experimental.set_memory_growth(device, True)
+    #     # tf.config.experimental.set_visible_devices(device, 'GPU')
+    #     device_name = "/GPU:0"
+    #     print("ERROR - CLASSIFYING PROCESS: ADLStream needs at least 2 GPUs.")
+    #     print("ERROR - CLASSIFYING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
+    #     # consumer.set_finished()
+
+    device_name = "/CPU:0"
+
+    # session_conf = tf.ConfigProto(log_device_placement=True)
+    # session_conf.gpu_options.allow_growth = True
+    # sess = tf.Session(config=session_conf)
+    # tf.keras.backend.set_session(sess)
 
     with tf.device(device_name):
 
@@ -598,12 +657,11 @@ def runADLStream(topic, create_model_func=create_cnn_model, two_gpu=True, batch_
                                 two_gpu=two_gpu, create_model_func=create_model_func, time_out_ms=time_out_ms)
 
     lock_messages = Lock()
-    lock_train = Lock()
     lock_training_data = Lock()
 
     pb = Process(target=buffer_feeder, args=[consumer, lock_messages])
-    p0 = Process(target=dnn_train, args=[0, consumer, lock_messages, lock_train, lock_training_data])
-    p1 = Process(target=dnn_classify, args=[1, consumer, lock_messages, lock_train, lock_training_data])
+    p0 = Process(target=dnn_train, args=[0, consumer, lock_training_data])
+    p1 = Process(target=dnn_classify, args=[1, consumer, lock_messages, lock_training_data])
     pb.start()
     p0.start()
     p1.start()
@@ -647,6 +705,34 @@ def runMultiARFFProducer(dir_path, bootstrap_servers='localhost:9092'):
     return topics
 
 
+def decode_class(c):
+    is_dataset = type(c) == type(pd.Series())
+    if is_dataset:
+        decoded = c.str.decode("utf-8") if type(c[0]) == type(b'') else c.astype('int').astype('str')
+    else:
+        decoded = c.decode("utf-8") if isinstance(c, (bytes, np.bytes_)) else str(int(c))
+
+    if is_dataset:
+        if 'class' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'level' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'group' in decoded[0]:
+            decoded = decoded.str.split('group', expand=True)[1]
+            decoded[decoded == 'A'] = 0
+            decoded[decoded == 'B'] = 1
+    else:
+        if 'class' in decoded:
+            decoded = decoded.split('class')[1]
+        elif 'group' in decoded:
+            decoded = decoded.split('group')[1]
+            decoded = 0 if decoded == 'A' else decoded
+            decoded = 1 if decoded == 'B' else decoded
+
+    return decoded
+
+
+
 def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     bootstrap_servers = bootstrap_servers.split(' ')
 
@@ -659,18 +745,28 @@ def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     attributes = [x for x in meta]
     df = pd.DataFrame(data)
     class_name = 'class' if 'class' in df.columns else 'target'
-    classes = np.unique(df[class_name]).astype(np.int).tolist()
+    classes = np.unique(decode_class(df[class_name])).astype(np.int)
     min_classes = min(classes)
+    classes = classes - min_classes
+    classes = [int(c) for c in classes]
 
     for _, entry in enumerate(data):
         record = {'classes': classes}
         for _, attr in enumerate(attributes):
             value = entry[attr]
-            if type(value) == np.bytes_:
-                value = int(value.decode('UTF-8'))
             if attr == class_name:
                 attr = 'class'
+                value = int(decode_class(value)) - int(min_classes)
+
+            elif type(value) == np.bytes_:
+                value = value.decode('UTF-8')
+
+                if meta[attr][0] == 'nominal':
+                    # print(meta[attr], value)
+                    value = meta[attr][1].index(value)
+
             record[attr] = value
+
         producer.send(topic, record)
     producer.close()
 
