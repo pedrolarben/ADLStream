@@ -12,37 +12,8 @@ from sklearn.preprocessing import label_binarize
 import numpy as np
 import pandas as pd
 import scipy.io.arff as arff
-
 import tensorflow as tf
-from tensorflow.keras import layers, Input, Model
-
-
-def create_cnn_model(num_features, num_classes, loss_func):
-    inp = Input(shape=(num_features, 1), name='input')
-    c = layers.Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Flatten()(c)
-    c = layers.Dense(512, activation='relu')(c)
-    c = layers.Dropout(0.2)(c)
-    c = layers.Dense(128, activation='relu')(c)
-    c = layers.Dropout(0.2)(c)
-    c = layers.Dense(num_classes, activation="softmax", name="prediction")(c)
-    model = Model(inp, c)
-
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return model
-
-models = {
-    'cnn': create_cnn_model,
-    'lstm': create_cnn_model,
-}
-
-def create_model(model_name, num_features, num_classes, loss_func):
-    return models[model_name](num_features, num_classes, loss_func)
+from datastream_minerva.models import create_model
 
 
 # Object shared among processes
