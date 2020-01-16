@@ -1,6 +1,5 @@
 import os
 import glob
-import argparse
 import time
 import random
 import json
@@ -13,35 +12,15 @@ from sklearn.preprocessing import label_binarize
 import numpy as np
 import pandas as pd
 import scipy.io.arff as arff
+import tensorflow as tf
+from datastream_minerva.models import create_model
 
-
-def create_cnn_model(num_features, num_classes, loss_func):
-    from tensorflow import keras
-    from tensorflow.keras import layers
-
-    inp = keras.Input(shape=(num_features, 1), name='input')
-    c = layers.Conv1D(32, 7, padding='same', activation='relu', dilation_rate=3)(inp)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Conv1D(64, 5, padding='same', activation='relu', dilation_rate=3)(c)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Conv1D(128, 3, padding='same', activation='relu', dilation_rate=3)(c)
-    c = layers.MaxPool1D(pool_size=2)(c)
-    c = layers.Flatten()(c)
-    c = layers.Dense(512, activation='relu')(c)
-    c = layers.Dropout(0.2)(c)
-    c = layers.Dense(128, activation='relu')(c)
-    c = layers.Dropout(0.2)(c)
-    c = layers.Dense(num_classes, activation="softmax", name="prediction")(c)
-    model = keras.Model(inp, c)
-
-    model.compile(loss=loss_func, optimizer='adam', metrics=['accuracy'])
-    return model
 
 # Object shared among processes
 class Consumer:
 
     def __init__(self, batch_size=10, num_batches_fed=40, topic='', results_path='./', bootstrap_servers=None,
-                 from_beginning=False, debug=True, two_gpu=False, create_model_func=create_cnn_model, time_out_ms=10000):
+                 from_beginning=False, debug=True, two_gpu=False, create_model_func='cnn', clf_name=None, time_out_ms=10000):
         self.batch_size = batch_size
         self.num_batches_fed = num_batches_fed
         self.topic = topic
@@ -71,12 +50,14 @@ class Consumer:
         self.num_classes = None
         self.weights = None
         self.available = True
-        self.clf_name = 'keras_parallel_3_Dilated_Conv_pooling_'+str(num_batches_fed)+'x'+str(batch_size)
+        self.clf_name = clf_name if clf_name is not None else 'ADLStream_{0}_{1}x{2}'.format(str(self.create_model_func.__name__),str(num_batches_fed),str(batch_size))
         self.average = 'weighted'
         self.loss_func = 'categorical_crossentropy'
         self.columns = None
         self.classes = None
         self.prequential_kappa = None
+        self.first_history = 0
+
 
     def add(self, ls):
         if not self.initial_training_set:
@@ -128,9 +109,16 @@ class Consumer:
     def get_history(self):
         return self.history[self.data_set_name]
 
+    def is_first_history(self):
+        if self.first_history<2:
+            self.first_history += 1
+            return True
+        else:
+            return False
+
     def write_history_metrics(self, k, v):
         dir_name = os.path.dirname(__file__)
-        file_path = os.path.join(dir_name, self.get_results_path(), 'ADLStream_' + self.get_clf_name())
+        file_path = os.path.join(dir_name, self.get_results_path(), self.get_clf_name())
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         file_path = os.path.join(file_path, k + '.csv')
@@ -249,10 +237,15 @@ class Consumer:
         return x, y
 
     def create_model(self, num_features, num_classes, loss_func):
-        try:
-            return self.create_model_func(num_features, num_classes, loss_func)
-        except Exception:
-            raise ValueError('Create-model function is not well defined')
+        return create_model(self.create_model_func, num_features, num_classes, loss_func)
+        # try:
+        #     model = self.create_model_func[0](num_features, num_classes, loss_func)
+        #     return model
+        # except Exception:
+        #     raise ValueError('Create-model function is not well defined')
+
+    def get_create_model_func(self):
+        return self.create_model_func
 
     def update_prequential_kappa(self, new_kappa):
         if self.prequential_kappa is None:
@@ -272,46 +265,44 @@ def read_message(consumer):
 
 # Save Metrics
 def save_history(consumer, x, y, y_pred, test_time, train_time):
-
+    # print(y_pred)
+    # print(y)
     y_pred = np.argmax(y_pred, axis=1)
     y = np.argmax(y, axis=1)
+    # print(y_pred)
+    # print(y)
 
     x = np.array(x)
     if len(x.shape) == 3:
         x = x.reshape(x.shape[0], -1)
 
-    records = pd.DataFrame(np.hstack((y.reshape(-1, 1), y_pred.reshape(-1, 1))))
-    records.columns = list(consumer.get_columns())[-2:]
+    records = pd.DataFrame(np.hstack((x, y.reshape(-1, 1), y_pred.reshape(-1, 1))))
+    records.columns = consumer.get_columns()
     consumer.write_history_metrics('data', records)
 
     prec, recall, fbeta, support = metrics.precision_recall_fscore_support(y, y_pred, average=consumer.get_average())
     accuracy = metrics.accuracy_score(y, y_pred)
     f1_score = metrics.f1_score(y, y_pred, average='weighted')
     conf_matrix = metrics.confusion_matrix(y, y_pred)
-    kappa = metrics.cohen_kappa_score(y,y_pred)
-    preq_kappa = consumer.update_prequential_kappa(kappa)
 
     try:
         tn, fp, fn, tp = conf_matrix.ravel()
     except ValueError as ve:
         tn, fp, fn, tp = conf_matrix[0][0], 0, 0, 0
 
-    metrics_record = pd.Series({
-        'total': consumer.get_count(),
-        'num_instances': len(records),
-        'tn': tn,
-        'fp': fp,
-        'fn': fn,
-        'tp': tp,
-        'precision': prec,
-        'recall': recall,
-        'f1': f1_score,
-        'fbeta': fbeta,
-        'accuracy': accuracy,
-        'kappa': kappa,
-        'preq_kappa': preq_kappa,
-        'train_time': train_time,
-        'test_time': test_time
+    metrics_record = pd.DataFrame({
+        'total': [len(consumer.get_history()['data'])],
+        'tn': [tn],
+        'fp': [fp],
+        'fn': [fn],
+        'tp': [tp],
+        'precision': [prec],
+        'recall': [recall],
+        'f1': [f1_score],
+        'fbeta': [fbeta],
+        'accuracy': [accuracy],
+        'train_time': [train_time],
+        'test_time': [test_time]
     })
     consumer.write_history_metrics('metrics', metrics_record)
 
@@ -322,16 +313,17 @@ def write_results_file(consumer):
     file_path = os.path.join(dir_name, consumer.get_results_path(), 'ADLStream_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-    history_data = consumer.get_history()['data']
-    history_data.columns = consumer.get_columns()
-    dir_name = os.path.dirname(__file__)
+    # history_data = consumer.get_history()['data']
+    # print(history_data)
+    # history_data.columns = consumer.get_columns()
+    # dir_name = os.path.dirname(__file__)
 
 
 
 def train_model(x_train, y_train, consumer, model, index=-1, device=None):
     # Train
-    if consumer.get_debug():
-        print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
+    # if consumer.get_debug():
+    print('P' + str(index) + ' (' + device + '):  Training with the last {} last instances'.format(len(x_train)))
     train_time_start = time.time()
     model.fit(x_train, y_train, consumer.get_batch_size(), epochs=1, verbose=0)
     train_time_end = time.time()
@@ -357,9 +349,7 @@ def classify(model, input_data):
 
 # DNN training process
 def dnn_train(index, consumer, lock_training_data):
-    import tensorflow as tf
-
-    # Specify GPU to use
+    # # Specify GPU to use
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if len(gpus) >= 2:
         device = gpus[0]
@@ -367,63 +357,62 @@ def dnn_train(index, consumer, lock_training_data):
         tf.config.experimental.set_visible_devices(device, 'GPU')
         device_name = device[0]
     else:
+        device_name = '/GPU:0'
         print("ERROR - TRAINING PROCESS: ADLStream needs at least 2 GPUs.")
         print("ERROR - TRAINING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-        return
 
-    with tf.device(device_name):
+    # Wait until first window available.
+    while not consumer.get_initial_training_set():
+        if consumer.is_time_out():
+            return
+        pass
 
-        # Wait until first window available.
-        while not consumer.get_initial_training_set():
-            if consumer.is_time_out():
-                return
-            pass
+    # Create and train model for the first time.
+    initial_training_set = consumer.get_initial_training_set()
+    window_y, window_x = [], []
 
-        # Create and train model for the first time.
-        initial_training_set = consumer.get_initial_training_set()
-        window_y, window_x = [], []
+    for record in initial_training_set:
+        consumer.set_classes(record.pop('classes', None))
+        window_y.append(record.pop('class', None))
+        window_x.append(list(record.values()))
 
-        for record in initial_training_set:
-            consumer.set_classes(record.pop('classes', None))
-            window_y.append(record.pop('class', None))
-            window_x.append(list(record.values()))
+        if not consumer.get_columns():
+            aux_columns = list(record.keys())
+            aux_columns.extend(['class', 'prediction'])
+            consumer.set_columns(aux_columns)
 
-            if not consumer.get_columns():
-                aux_columns = list(record.keys())
-                aux_columns.extend(['class', 'prediction'])
-                consumer.set_columns(aux_columns)
+    if consumer.get_num_classes() == 2:
+        consumer.set_loss_function('binary_crossentropy')
+        consumer.set_average('binary')
 
-        if consumer.get_num_classes() == 2:
-            consumer.set_loss_function('binary_crossentropy')
-            consumer.set_average('binary')
+    x = np.expand_dims(np.array(window_x), axis=-1)
+    y = label_binarize(window_y, consumer.get_classes())
+    if consumer.get_num_classes()==2:
+        y = np.eye(2)[y.flatten()]
+    with lock_training_data:
+        consumer.add_training_data(x, y)
+    consumer.set_num_features(x.shape[1])
 
-        x = np.expand_dims(np.array(window_x), axis=-1)
-        y = label_binarize(window_y, consumer.get_classes())
-        if consumer.get_num_classes()==2:
-            y = np.eye(2)[y.flatten()]
-        with lock_training_data:
-            consumer.add_training_data(x, y)
-        consumer.set_num_features(x.shape[1])
+    # create model, train it and save the weights.
 
-        # create model, train it and save the weights.
-        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                      consumer.get_loss_function())
+    # model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+    model = create_model(consumer.get_create_model_func(), consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+
+    with lock_training_data:
+        x_train, y_train = consumer.get_training_data()
+    train_model(x_train, y_train, consumer, model, index, device_name)
+
+    # Main loop
+    while not consumer.is_finished():
         with lock_training_data:
             x_train, y_train = consumer.get_training_data()
-        train_model(x_train, y_train, consumer, model, index, device_name)
-
-        # Main loop
-        while not consumer.is_finished():
-            with lock_training_data:
-                x_train, y_train = consumer.get_training_data()
-            train_time = train_model(x_train, y_train, consumer, model, index, device_name)
-            consumer.add_train_time(train_time)
+        train_time = train_model(x_train, y_train, consumer, model, index, device_name)
+        consumer.add_train_time(train_time)
 
 
 # DNN classifying process
 def dnn_classify(index, consumer, lock_messages, lock_training_data):
-    import tensorflow as tf
-
+    #
     # Specify GPU to use
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if len(gpus) >= 2:
@@ -432,113 +421,117 @@ def dnn_classify(index, consumer, lock_messages, lock_training_data):
         tf.config.experimental.set_visible_devices(device, 'GPU')
         device_name = device[0]
     else:
+        device_name = "/CPU:0"
         print("ERROR - CLASSIFYING PROCESS: ADLStream needs at least 2 GPUs.")
         print("ERROR - CLASSIFYING PROCESS: {0} GPUs found: {1}".format(len(gpus), gpus))
-        consumer.set_finished()
-        return
+        # consumer.set_finished()
 
-    with tf.device(device_name):
 
-        window_y, window_x = [], []
-        batch_size = consumer.get_batch_size()
-        count_messages = 0
-        y_pred_history = None
-        x_pred_history = None
-        y_history = None
-        test_time = 0.
+    window_y, window_x = [], []
+    batch_size = consumer.get_batch_size()
+    count_messages = 0
+    y_pred_history = None
+    x_pred_history = None
+    y_history = None
+    test_time = 0.
 
-        # Wait until model is created and trained for the first time.
-        while not consumer.is_new_model_available():
+    # Wait until model is created and trained for the first time.
+    while not consumer.is_new_model_available():
+        if consumer.is_time_out():
+            return
+        pass
+
+    # create model and load weights
+    # model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
+    #                               consumer.get_loss_function())
+    model = create_model(consumer.get_create_model_func(), consumer.get_num_features(), consumer.get_num_classes(),
+                         consumer.get_loss_function())
+
+    # model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
+
+    model.set_weights(consumer.get_weights())
+
+    # Main loop
+    while True:
+        # Read messages
+        with lock_messages:
+            record = read_message(consumer)
+        # if no message received...
+        if record is None:
+            # if timeout = true --> break
             if consumer.is_time_out():
-                return
-            pass
+                consumer.set_finished()
+                if consumer.get_debug():
+                    print("P" + str(index) + ": Finish")
+                if y_pred_history is not None:
+                    save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, 0.)
+                # TODO: WHY????? write_results_file(consumer)
+                break
+            # ToDo: what if time_out is not True (wait? continue asking?)
+            if not consumer.is_time_out():
+                if consumer.get_debug():
+                    print("P" + str(index) + ": ... waiting feeder")
+                time.sleep(0.2)
 
-        # create model and load weights
-        model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
-                                      consumer.get_loss_function())
-        model.set_weights(consumer.get_weights())
+        else:
+            _ = record.pop('classes', None)
+            record_class = record.pop('class', None)
+            record_values = list(record.values())
 
-        # Main loop
-        while True:
-            # Read messages
-            with lock_messages:
-                record = read_message(consumer)
-            # if no message received...
-            if record is None:
-                # if timeout = true --> break
-                if consumer.is_time_out():
-                    consumer.set_finished()
-                    if consumer.get_debug():
-                        print("P" + str(index) + ": Finish")
-                    if y_pred_history is not None:
-                        save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, 0.)
-                    write_results_file(consumer)
-                    break
-                # ToDo: what if time_out is not True (wait? continue asking?)
-                if not consumer.is_time_out():
-                    if consumer.get_debug():
-                        print("P" + str(index) + ": ... waiting feeder")
-                    time.sleep(0.2)
+            window_y.append(record_class)
+            window_x.append(record_values)
 
+            y = label_binarize([window_y[-1]], consumer.get_classes())
+            if consumer.get_num_classes() == 2:
+                y = np.eye(2)[y.flatten()]
+
+            x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
+            # Update model if new model available
+            if consumer.is_new_model_available():
+                model.set_weights(consumer.get_weights())
+                consumer.set_new_model_available(False)
+            # Classify
+            y_pred, test_time_aux = classify(model, x_pred)
+            test_time += test_time_aux
+
+            if y_pred_history is None:
+                y_pred_history = np.array(y_pred)
             else:
-                _ = record.pop('classes', None)
-                record_class = record.pop('class', None)
-                record_values = list(record.values())
+                y_pred_history = np.append(y_pred_history, y_pred, axis=0)
 
-                window_y.append(record_class)
-                window_x.append(record_values)
+            if x_pred_history is None:
+                x_pred_history = np.array(x_pred)
+            else:
+                x_pred_history = np.append(x_pred_history, x_pred, axis=0)
 
-                y = label_binarize([window_y[-1]], consumer.get_classes())
+            if y_history is None:
+                y_history = np.array(y)
+            else:
+                y_history = np.append(y_history, y, axis=0)
+
+            # if window completed
+            if len(window_x) % batch_size == 0:
+                count_messages += batch_size
+                if consumer.get_debug():
+                    print('P' + str(index) + ' (' + device_name + '):  {} instances classified'.format(
+                        count_messages))
+                # Format window data
+                x = np.expand_dims(np.array(window_x), axis=-1)
+                window_y = list(np.array(window_y))
+                y = label_binarize(window_y, consumer.get_classes())
                 if consumer.get_num_classes() == 2:
                     y = np.eye(2)[y.flatten()]
 
-                x_pred = np.expand_dims(np.array([list(record_values)]), axis=-1)
-                # Update model if new model available
-                if consumer.is_new_model_available():
-                    model.set_weights(consumer.get_weights())
-                    consumer.set_new_model_available(False)
-                # Classify
-                y_pred, test_time_aux = classify(model, x_pred)
-                test_time += test_time_aux
+                with lock_training_data:
+                    consumer.add_training_data(x, y)
+                window_y, window_x = [], []
 
-                if y_pred_history is None:
-                    y_pred_history = np.array(y_pred)
-                else:
-                    y_pred_history = np.append(y_pred_history, y_pred, axis=0)
-
-                if x_pred_history is None:
-                    x_pred_history = np.array(x_pred)
-                else:
-                    x_pred_history = np.append(x_pred_history, x_pred, axis=0)
-
-                if y_history is None:
-                    y_history = np.array(y)
-                else:
-                    y_history = np.append(y_history, y, axis=0)
-
-                # if window completed
-                if len(window_x) % batch_size == 0:
-                    count_messages += batch_size
-                    if consumer.get_debug():
-                        print('P' + str(index) + ' (' + device_name + '):  {} instances classified'.format(
-                            count_messages))
-                    # Format window data
-                    x = np.expand_dims(np.array(window_x), axis=-1)
-                    window_y = list(np.array(window_y))
-                    y = label_binarize(window_y, consumer.get_classes())
-                    if consumer.get_num_classes() == 2:
-                        y = np.eye(2)[y.flatten()]
-
-                    with lock_training_data:
-                        consumer.add_training_data(x, y)
-                    window_y, window_x = [], []
-
-                    # Save metrics
-                    save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, consumer.get_train_time())
-                    y_pred_history = None
-                    x_pred_history = None
-                    y_history = None
-                    test_time = 0.
+                # Save metrics
+                save_history(consumer, x_pred_history, y_history, y_pred_history, test_time, consumer.get_train_time())
+                y_pred_history = None
+                x_pred_history = None
+                y_history = None
+                test_time = 0.
 
 
 # Buffer feeder
@@ -579,7 +572,7 @@ def buffer_feeder(consumer, lock):
                 time.sleep(len_buffer / (100 * batch_size))
 
 
-def runADLStream(topic, create_model_func=create_cnn_model, two_gpu=True, batch_size=10, num_batches_fed=40, debug=True, output_path='./ADLStreamResults/', from_beginning=True, time_out_ms=10000, bootstrap_servers='localhost:9092'):
+def runADLStream(topic, create_model_func='cnn', two_gpu=True, batch_size=10, num_batches_fed=40, debug=True, output_path='./ADLStreamResults/', from_beginning=True, time_out_ms=10000, bootstrap_servers='localhost:9092', clf_name=None):
     bootstrap_servers = bootstrap_servers.split(' ')
     print("Consuming from bootstrap_servers: " + str(bootstrap_servers))
     print('Topic:', topic)
@@ -593,17 +586,16 @@ def runADLStream(topic, create_model_func=create_cnn_model, two_gpu=True, batch_
     manager = BaseManager()
     manager.start()
     consumer = manager.Consumer(batch_size=batch_size, num_batches_fed=num_batches_fed, results_path=output_path,
-                                topic=topic,
+                                topic=topic, clf_name=clf_name,
                                 bootstrap_servers=bootstrap_servers, from_beginning=from_beginning, debug=debug,
                                 two_gpu=two_gpu, create_model_func=create_model_func, time_out_ms=time_out_ms)
 
     lock_messages = Lock()
-    lock_train = Lock()
     lock_training_data = Lock()
 
     pb = Process(target=buffer_feeder, args=[consumer, lock_messages])
-    p0 = Process(target=dnn_train, args=[0, consumer, lock_messages, lock_train, lock_training_data])
-    p1 = Process(target=dnn_classify, args=[1, consumer, lock_messages, lock_train, lock_training_data])
+    p0 = Process(target=dnn_train, args=[0, consumer, lock_training_data])
+    p1 = Process(target=dnn_classify, args=[1, consumer, lock_messages, lock_training_data])
     pb.start()
     p0.start()
     p1.start()
@@ -647,6 +639,34 @@ def runMultiARFFProducer(dir_path, bootstrap_servers='localhost:9092'):
     return topics
 
 
+def decode_class(c):
+    is_dataset = type(c) == type(pd.Series())
+    if is_dataset:
+        decoded = c.str.decode("utf-8") if type(c[0]) == type(b'') else c.astype('int').astype('str')
+    else:
+        decoded = c.decode("utf-8") if isinstance(c, (bytes, np.bytes_)) else str(int(c))
+
+    if is_dataset:
+        if 'class' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'level' in decoded[0]:
+            decoded = decoded.str.split('class', expand=True)[1]
+        elif 'group' in decoded[0]:
+            decoded = decoded.str.split('group', expand=True)[1]
+            decoded[decoded == 'A'] = 0
+            decoded[decoded == 'B'] = 1
+    else:
+        if 'class' in decoded:
+            decoded = decoded.split('class')[1]
+        elif 'group' in decoded:
+            decoded = decoded.split('group')[1]
+            decoded = 0 if decoded == 'A' else decoded
+            decoded = 1 if decoded == 'B' else decoded
+
+    return decoded
+
+
+
 def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     bootstrap_servers = bootstrap_servers.split(' ')
 
@@ -659,18 +679,28 @@ def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     attributes = [x for x in meta]
     df = pd.DataFrame(data)
     class_name = 'class' if 'class' in df.columns else 'target'
-    classes = np.unique(df[class_name]).astype(np.int).tolist()
+    classes = np.unique(decode_class(df[class_name])).astype(np.int)
     min_classes = min(classes)
+    classes = classes - min_classes
+    classes = [int(c) for c in classes]
 
     for _, entry in enumerate(data):
         record = {'classes': classes}
         for _, attr in enumerate(attributes):
             value = entry[attr]
-            if type(value) == np.bytes_:
-                value = int(value.decode('UTF-8'))
             if attr == class_name:
                 attr = 'class'
+                value = int(decode_class(value)) - int(min_classes)
+
+            elif type(value) == np.bytes_:
+                value = value.decode('UTF-8')
+
+                if meta[attr][0] == 'nominal':
+                    # print(meta[attr], value)
+                    value = meta[attr][1].index(value)
+
             record[attr] = value
+
         producer.send(topic, record)
     producer.close()
 
