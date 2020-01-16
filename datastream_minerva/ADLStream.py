@@ -50,7 +50,7 @@ class Consumer:
         self.num_classes = None
         self.weights = None
         self.available = True
-        self.clf_name = clf_name if clf_name is not None else 'ADLStream_{0}_{1}x{2}'.format(str(self.create_model_func.__name__),str(num_batches_fed),str(batch_size))
+        self.clf_name = clf_name if clf_name is not None else 'ADLStream_{0}_{1}x{2}'.format(str(self.create_model_func),str(num_batches_fed),str(batch_size))
         self.average = 'weighted'
         self.loss_func = 'categorical_crossentropy'
         self.columns = None
