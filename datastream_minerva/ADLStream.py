@@ -6,6 +6,7 @@ import json
 import traceback
 from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
+from tqdm import tqdm
 from kafka import KafkaConsumer, KafkaProducer
 import sklearn.metrics as metrics
 from sklearn.preprocessing import label_binarize
@@ -64,6 +65,7 @@ class Consumer:
             self.initial_training_set = [] + ls
         else:
             self.buffer = self.buffer + ls
+            print("#1", len(self.buffer))
 
     def next(self):
         if len(self.buffer) == 0:
@@ -88,6 +90,9 @@ class Consumer:
     def get_batch_size(self):
         return self.batch_size
 
+    def get_num_batches_fed(self):
+        return self.num_batches_fed
+
     def get_bootstrap_servers(self):
         return self.bootstrap_servers
 
@@ -107,6 +112,10 @@ class Consumer:
         return self.data_set_name
 
     def get_history(self):
+        print("#2", len(self.history),
+              len(self.history[list(self.history.keys())[0]]),
+              self.history[list(self.history.keys())[0]]['data'].values.shape,
+              self.history[list(self.history.keys())[0]]['metrics'].values.shape,)
         return self.history[self.data_set_name]
 
     def is_first_history(self):
@@ -115,23 +124,28 @@ class Consumer:
             return True
         else:
             return False
-
-    def write_history_metrics(self, k, v):
+    def append_history(self, k, v):
         dir_name = os.path.dirname(__file__)
-        file_path = os.path.join(dir_name, self.get_results_path(), self.get_clf_name())
+        file_path = os.path.join(dir_name, self.get_results_path(), 'ADLStream_' + self.get_clf_name())
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         file_path = os.path.join(file_path, k + '.csv')
         if self.is_first_history():
             with open(file_path, 'w') as fd:
-                fd.write(','.join([str(c) for c in v.columns]) + '\n')
-        if k == 'metrics' or k == 'data':
+                fd.write(','.join([str(c) for c in v.columns])+'\n')
+        if k == 'metrics':
+            values = v.values if len(v.values.shape)>1 else v.values.reshape((1,v.values.shape[0]))
+            values_csv = '\n'.join([ ','.join([str(c) for c in r]) for r in values])+'\n'
+            with open(file_path, 'a') as fd:
+                fd.write(values_csv)
+        elif k == 'data':
             values = v.values if len(v.values.shape) > 1 else v.values.reshape((1, v.values.shape[0]))
             values_csv = '\n'.join([','.join([str(c) for c in r]) for r in values]) + '\n'
             with open(file_path, 'a') as fd:
                 fd.write(values_csv)
         else:
             raise Exception("history key must be 'data' or 'metrics'")
+
 
     def get_results_path(self):
         return self.results_path
@@ -218,6 +232,7 @@ class Consumer:
             self.x_training = np.vstack((self.x_training, x))
             self.y_training = np.vstack((self.y_training, y))
             self.batch_counter += 1
+        print("#3", self.x_training.shape, self.y_training.shape)
 
     def get_training_data(self):
         x, y = np.copy(self.x_training), np.copy(self.y_training)
@@ -253,6 +268,7 @@ class Consumer:
         else:
             fading_factor = 0.98
             self.prequential_kappa = (new_kappa + fading_factor * self.prequential_kappa) / (1 + fading_factor)
+        print("#4", self.prequential_kappa)
         return self.prequential_kappa
 
 
@@ -278,7 +294,7 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
 
     records = pd.DataFrame(np.hstack((x, y.reshape(-1, 1), y_pred.reshape(-1, 1))))
     records.columns = consumer.get_columns()
-    consumer.write_history_metrics('data', records)
+    consumer.append_history('data', records)
 
     prec, recall, fbeta, support = metrics.precision_recall_fscore_support(y, y_pred, average=consumer.get_average())
     accuracy = metrics.accuracy_score(y, y_pred)
@@ -304,19 +320,26 @@ def save_history(consumer, x, y, y_pred, test_time, train_time):
         'train_time': [train_time],
         'test_time': [test_time]
     })
-    consumer.write_history_metrics('metrics', metrics_record)
+    consumer.append_history('metrics', metrics_record)
 
 
 # Create results files
 def write_results_file(consumer):
     dir_name = os.path.dirname(__file__)
+    #file_path = os.path.join(dir_name, consumer.get_results_path(), 'keras_parallel_' + consumer.get_clf_name())
     file_path = os.path.join(dir_name, consumer.get_results_path(), 'ADLStream_' + consumer.get_clf_name())
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-    # history_data = consumer.get_history()['data']
-    # print(history_data)
-    # history_data.columns = consumer.get_columns()
-    # dir_name = os.path.dirname(__file__)
+
+    history_data = consumer.get_history()['data']
+    history_data.columns = consumer.get_columns()
+
+    # history_data.to_csv(os.path.join(file_path, 'data.csv'), index=False)
+    # consumer.get_history()['metrics'].to_csv(os.path.join(file_path, 'metrics.csv'),
+    #                                          columns=('total', 'tp', 'tn', 'fp', 'fn', 'precision',
+    #                                                   'recall', 'f1', 'fbeta',
+    #                                                   'accuracy', 'train_time', 'test_time'),
+    #                                          index=False)
 
 
 
@@ -442,12 +465,8 @@ def dnn_classify(index, consumer, lock_messages, lock_training_data):
         pass
 
     # create model and load weights
-    # model = consumer.create_model(consumer.get_num_features(), consumer.get_num_classes(),
-    #                               consumer.get_loss_function())
     model = create_model(consumer.get_create_model_func(), consumer.get_num_features(), consumer.get_num_classes(),
                          consumer.get_loss_function())
-
-    # model = create_cnn_model(consumer.get_num_features(), consumer.get_num_classes(), consumer.get_loss_function())
 
     model.set_weights(consumer.get_weights())
 
@@ -537,6 +556,7 @@ def dnn_classify(index, consumer, lock_messages, lock_training_data):
 # Buffer feeder
 def buffer_feeder(consumer, lock):
     batch_size = consumer.get_batch_size()
+    num_batches_fed = consumer.get_num_batches_fed()
     kafka_consumer = KafkaConsumer(consumer.get_topic(),
                                    group_id='DSClassification_Consumer_par_{}'.format(random.randrange(999999)),
                                    bootstrap_servers=consumer.get_bootstrap_servers(),
@@ -569,7 +589,9 @@ def buffer_feeder(consumer, lock):
             new_batch = []
             # Control buffer size
             if len_buffer > 100 * batch_size:
+                print("PB  BUFFER FULL ({}). Waiting {}s".format(len_buffer, (len_buffer/(100*batch_size))))
                 time.sleep(len_buffer / (100 * batch_size))
+
 
 
 def runADLStream(topic, create_model_func='cnn', two_gpu=True, batch_size=10, num_batches_fed=40, debug=True, output_path='./ADLStreamResults/', from_beginning=True, time_out_ms=10000, bootstrap_servers='localhost:9092', clf_name=None):
@@ -604,41 +626,6 @@ def runADLStream(topic, create_model_func='cnn', two_gpu=True, batch_size=10, nu
     p1.join()
 
 
-def runMultiARFFProducer(dir_path, bootstrap_servers='localhost:9092'):
-    bootstrap_servers = bootstrap_servers.split(' ')
-
-    topics = []
-
-    arff_files = glob.glob(os.path.join( dir_path, '**/*.arff'), recursive=True)
-    for file_path in arff_files:
-        producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
-                                 client_id='ARFF_Producer_{}'.format(random.randrange(999999)),
-                                 value_serializer=lambda m: json.dumps(m).encode('ascii'))
-        topic = 'streams_' + os.path.basename(file_path).replace('.arff', '')
-        topics.append(topic)
-        print('Creating topic for {}'.format(topic))
-        data, meta = arff.loadarff(file_path)
-        attributes = [x for x in meta]
-        df = pd.DataFrame(data)
-        class_name = 'class' if 'class' in df.columns else 'target'
-        classes = np.unique(df[class_name]).astype(np.int).tolist()
-        min_classes = min(classes)
-
-        for _, entry in enumerate(data):
-            record = {'classes': classes}
-            for _, attr in enumerate(attributes):
-                value = entry[attr]
-                if type(value) == np.bytes_:
-                    value = int(value.decode('UTF-8'))
-                if attr == class_name:
-                    attr = 'class'
-                record[attr] = value
-            producer.send(topic, record)
-        producer.close()
-
-    return topics
-
-
 def decode_class(c):
     is_dataset = type(c) == type(pd.Series())
     if is_dataset:
@@ -666,6 +653,50 @@ def decode_class(c):
     return decoded
 
 
+def runMultiARFFProducer(dir_path, bootstrap_servers='localhost:9092'):
+    bootstrap_servers = bootstrap_servers.split(' ')
+
+    topics = []
+
+    arff_files = glob.glob(os.path.join( dir_path, '**/*.arff'), recursive=True)
+    for file_path in arff_files:
+        producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
+                                 client_id='ARFF_Producer_{}'.format(random.randrange(999999)),
+                                 value_serializer=lambda m: json.dumps(m).encode('ascii'))
+        topic = 'streams_' + os.path.basename(file_path).replace('.arff', '')
+        print('Creating topic for {}'.format(topic))
+        data, meta = arff.loadarff(file_path)
+        attributes = [x for x in meta]
+        df = pd.DataFrame(data)
+        class_name = 'class' if 'class' in df.columns else 'target'
+
+        classes = np.unique(decode_class(df[class_name])).astype(np.int)
+        print(classes)
+        min_classes = min(classes)
+        classes = classes - min_classes
+        classes = [int(c) for c in classes]
+
+        for _, entry in tqdm(enumerate(data)):
+            record = {'classes': list(classes)}
+            for _, attr in enumerate(attributes):
+                value = entry[attr]
+                if attr == class_name:
+                    attr = 'class'
+                    value = int(decode_class(value)) - int(min_classes)
+
+                elif type(value) == np.bytes_:
+                    value = value.decode('UTF-8')
+
+                    if meta[attr][0] == 'nominal':
+                        # print(meta[attr], value)
+                        value = meta[attr][1].index(value)
+
+                record[attr] = value
+            producer.send(topic, record)
+        producer.close()
+
+    return topics
+
 
 def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     bootstrap_servers = bootstrap_servers.split(' ')
@@ -684,7 +715,7 @@ def runARFFProducer(file_path, bootstrap_servers='localhost:9092'):
     classes = classes - min_classes
     classes = [int(c) for c in classes]
 
-    for _, entry in enumerate(data):
+    for _, entry in tqdm(enumerate(data)):
         record = {'classes': classes}
         for _, attr in enumerate(attributes):
             value = entry[attr]
