@@ -21,7 +21,7 @@ This system has two separated layers for training and testing that work simultan
 The dual-layer architecture  allows  to  alleviate  the  computational  cost problem  of  complex  deep  learning  models,  such  as convolutional neural networks, for the data streaming context,  in  which  speed  is  essential.
 
 <p align="center">
-  <img width="451" height="368" src="https://github.com/pedrolarben/datastream-minerva/blob/master/doc/images/Parallel-NN.png">
+  <img width="451" height="368" src="https://github.com/pedrolarben/ADLStream/blob/master/doc/images/Parallel-NN.png">
 </p>
 
 ## API Docs <a name="api"></a>
@@ -153,19 +153,19 @@ pip install numpy pandas sklearn tensorflow==1.15rc2 keras kafka-python
 in order to use ADLStream, we'll download the source code
 ```bash
 cd ~/ # Directory of your choise
-git clone https://github.com/pedrolarben/datastream-minerva.git
-cd datastream-minerva
+git clone https://github.com/pedrolarben/ADLStream.git
+cd ADLStream
 ```
 
 you can add your code to this folder but we strongly recommend you to follow the next instructions to use ADLStream in your own project.
 
 #### Sample project <a name="sample"></a>
 
-Copy the folder `datastream_minerva` to your project (in the instrucción well create a project from scratch)
+Copy the folder `ADLStream` to your project (in the instrucción well create a project from scratch)
 
 ```bash
 mkdir ~/my_ADLStream_project/
-cp -r datastream_minerva/ ~/my_ADLStream_project/datastream_minerva/
+cp -r ADLStream/ ~/my_ADLStream_project/ADLStream/
 cd ~/my_ADLStream_project/
 ```
 Once we have the ADLStream code in our project we can use it as a library in our script
@@ -176,7 +176,7 @@ Once we have the ADLStream code in our project we can use it as a library in our
 here there is a small piece of code to test ADLStream
 
 ```python3
-from datastream_minerva.ADLStream import runADLStream, runARFFProducer
+from ADLStream.ADLStream import runADLStream, runARFFProducer
 
 bootstrap_servers = 'localhost:9092' # Kafka server
 arff_file = '/path/to/your/data/file/dataset_name.arff' 
