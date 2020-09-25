@@ -6,4 +6,4 @@ from ADLStream.models.esn import ESN
 from ADLStream.models.cnn import CNN
 from ADLStream.models.tcn import TCN
 
-from ADLStream.models.models import create_model
+from ADLStream.models.model_factory import create_model

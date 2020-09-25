@@ -7,7 +7,7 @@ import numpy as np
 
 class FakeStream(BaseStream):
     """Fake Stream.
-    This steam returns a sine wave in a specific shape and length.
+    This stream returns a sine wave in a specific shape and length.
 
     Arguments:
         num_features (int >=1, optional): Number of features for each message.

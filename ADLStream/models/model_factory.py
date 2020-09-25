@@ -1,15 +1,21 @@
 """Deep learning model factory."""
 
-from ADLStream import models
+from ADLStream.models import MLP
+from ADLStream.models import LSTM
+from ADLStream.models import GRU
+from ADLStream.models import ERNN
+from ADLStream.models import ESN
+from ADLStream.models import CNN
+from ADLStream.models import TCN
 
 MODEL_FACTORY = {
-    "MLP": models.MLP,
-    "LSTM": models.LSTM,
-    "GRU": models.GRU,
-    "ERNN": models.ERNN,
-    "ESN": models.ESN,
-    "CNN": models.CNN,
-    "TCN": models.TCN,
+    "MLP": MLP,
+    "LSTM": LSTM,
+    "GRU": GRU,
+    "ERNN": ERNN,
+    "ESN": ESN,
+    "CNN": CNN,
+    "TCN": TCN,
 }
 
 
