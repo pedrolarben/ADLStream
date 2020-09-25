@@ -17,7 +17,8 @@ LONG_DESC_TYPE = "text/markdown"
 INSTALL_REQUIRES = [
     "numpy",
     "tensorflow>=2.1.0",
-    "tensorflow-addons>=0.11.0" "keras-tcn",
+    "tensorflow-addons>=0.11.0",
+    "keras-tcn",
     "scikit-learn",
     "kafka-python",
 ]
