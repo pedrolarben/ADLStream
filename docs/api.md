@@ -1,5 +1,0 @@
-# API
-
-## Data
-
-::: ADLStream.data

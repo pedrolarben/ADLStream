@@ -19,6 +19,7 @@ INSTALL_REQUIRES = [
     "tensorflow>=2.1.0",
     "tensorflow-addons",
     "keras-tcn",
+    "matplotlib",
     "scikit-learn",
     "kafka-python",
 ]
