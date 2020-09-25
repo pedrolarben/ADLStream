@@ -1,0 +1,62 @@
+
+
+site_name: ADLStream
+site_url: https://adlstream.readthedocs.io
+site_description: Asynchronous dual-pipeline deep learning framework for online data stream mining.
+site_author: Pedro Lara-Benítez & Manuel Carranza-García
+
+repo_url: https://github.com/pedrolarben/ADLStream/
+edit_uri: ""
+
+theme:
+  name: material
+  custom_dir: 'docs/theme'
+  favicon: images/favicon.ico
+  logo: images/logo.png
+  palette:
+    primary: 'teal'
+    accent: 'deep orange'
+
+nav:
+  - Home: index.md
+  - Installation guide: install.md
+  - Getting started: getting_started.md
+  - API: 
+    - ADLStream: API/ADLStream.ADLStream.md
+    - Data:
+      - Stream: 
+        - BaseStream: API/data/stream/BaseStream.md
+        - FileStream: API/data/stream/FileStream.md
+        - CSVFileStream: API/data/stream/CSVFileStream.md
+        - KafkaStream: API/data/stream/KafkaStream.md
+        - FakeStream: API/data/stream/FakeStream.md
+      - BaseStreamGenerator: API/data/BaseStreamGenerator.md
+      - ClassificationStreamGenerator: API/data/ClassificationStreamGenerator.md
+      - MovingWindowStreamGenerator: API/data/MovingWindowStreamGenerator.md
+    - Evaluation:
+      - BaseEvaluator: API/evaluation/BaseEvaluator.md
+      - InterleavedChunkEvaluator: API/evaluation/InterleavedChunkEvaluator.md
+      - PrequentialEvaluator: API/evaluation/PrequentialEvaluator.md
+      - metrics: API/evaluation/metrics.md
+    - Models: 
+      - create_model: API/models/models.md
+      - MLP: API/models/mlp.md
+      - LSTM: API/models/lstm.md
+      - GRU: API/models/gru.md
+      - ERNN: API/models/ernn.md
+      - ESN: API/models/esn.md
+      - CNN: API/models/cnn.md
+      - TCN: API/models/tcn.md
+  - Research: research.md 
+  - Contributing: contributing.md
+  - License: license_page.md
+  - Authors: authors.md
+      
+
+plugins:
+  - search
+  - mkdocstrings
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
