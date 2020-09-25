@@ -1,12 +1,3 @@
-# Datasets
-datasets_arff/
-
-#Results
-DSClassificationResults/
-
-#kafka
-kafka*/
-
 # PyCharm
 **/.idea/workspace.xml
 **/.idea/tasks.xml

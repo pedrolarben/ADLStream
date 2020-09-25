@@ -3,11 +3,11 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 PACKAGE_NAME = "ADLStream"
 AUTHOR = "Pedro Lara-Benítez & Manuel Carranza-García"
 AUTHOR_EMAIL = "plbenitez@us.es"
-URL = "https://github.com/pedrolarben/ADLStream"
+URL = "https://adlstream.readthedocs.io"
 
 LICENSE = "MIT"
 DESCRIPTION = "ADLStream is a novel asynchronous dual-pipeline deep learning framework for data stream mining"
