@@ -41,6 +41,6 @@ To use ADLStream:
 import ADLStream
 ```
 
-Check [getting started](/getting_started) for an example of use.
+Check [getting started](../getting_started) for an example of use.
 
 
