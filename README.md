@@ -179,7 +179,7 @@ adls.run()
 
 The processes will start and the progress will be plot obtaining a result similar to this one
 
-![output-plot](img/fakedata-example.gif)
+![output-plot](docs/img/fakedata-example.gif)
 
 Complete API reference can be found [here](https://adlstream.readthedocs.io).
 
