@@ -24,14 +24,27 @@ class CSVFileStream(FileStream):
             Defaults to 30000.
     """
 
-    def __init__(self, filename, sep=",", index_col=0, header=0, stream_period=100, timeout=30000, **kwargs):
+    def __init__(
+        self,
+        filename,
+        sep=",",
+        index_col=0,
+        header=0,
+        stream_period=100,
+        timeout=30000,
+        **kwargs
+    ):
         super().__init__(
-            filename=filename, skip_first=header, stream_period=stream_period, timeout=timeout, **kwargs
+            filename=filename,
+            skip_first=header,
+            stream_period=stream_period,
+            timeout=timeout,
+            **kwargs
         )
         self.sep = sep
         self.index_col = index_col
 
     def decode(self, line):
         message = line.strip().split(self.sep)
-        message = [float(x.strip()) for x in message][self.index_col:] 
+        message = [float(x.strip()) for x in message][self.index_col :]
         return message
