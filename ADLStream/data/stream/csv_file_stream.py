@@ -45,6 +45,6 @@ class CSVFileStream(FileStream):
         self.index_col = index_col
 
     def decode(self, line):
-        message = line.strip().split(self.sep)
-        message = [float(x.strip()) for x in message][self.index_col :]
+        message = line.strip().split(self.sep)[self.index_col :]
+        message = [float(x.strip()) for x in message]
         return message
