@@ -34,12 +34,15 @@ class FileStream(BaseStream, ABC):
             Defaults to 30000.
     """
 
-    def __init__(self, filename, stream_period=100, timeout=30000, **kwargs):
+    def __init__(self, filename, skip_first=0, stream_period=100, timeout=30000, **kwargs):
         super().__init__(stream_period=stream_period, timeout=timeout, **kwargs)
         self.filename = filename
+        self.skip_first = skip_first
 
     def start(self):
         self.file = open(self.filename, "r")
+        for _ in range(self.skip_first):
+            next(self.file)
         super().start()
 
     def stop(self):
