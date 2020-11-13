@@ -177,7 +177,6 @@ class BaseEvaluator(ABC):
             self.line.set_label("{} ({:.4f})".format(self.xlabel, self.ydata[-1]))
             self.ax.legend(labels=["{} ({:.4f})".format(self.xlabel, self.ydata[-1])])
             plt.pause(0.0001)
-            plt.savefig("{}.jpg".format(len(self.xdata)))
 
     def update_predictions(self, context):
         """Gets new predictions from ADLStream context
