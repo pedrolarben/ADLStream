@@ -41,6 +41,3 @@ class FakeStream(BaseStream):
     def get_message(self):
         message = self.messages.pop(0)
         return message
-
-
-data = list(np.sin([[x / 100] * 3 for x in range(2000)]))
