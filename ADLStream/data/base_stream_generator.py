@@ -30,9 +30,10 @@ class BaseStreamGenerator(ABC):
             Stream source to be feed to the ADLStream framework.
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream, max_instances=None):
         self.stream = stream
         self.num_messages = 0
+        self.max_messages = max_instances
 
     @property
     def num_messages(self):
@@ -42,9 +43,16 @@ class BaseStreamGenerator(ABC):
     def num_messages(self, value):
         self._num_messages = value
 
+    def _check_number_instances(self):
+        if self.max_messages is not None:
+            if self.num_messages >= self.max_messages:
+                self.stream.stop()
+                raise StopIteration
+
     def next(self, context):
         message = None
         try:
+            self._check_number_instances()
             message = self.stream.next()
             self.num_messages += 1
         except StopIteration:
