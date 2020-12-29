@@ -1,6 +1,6 @@
 """Implements a prequential evaluator."""
 
-from ADLStream.evaluation import metrics, InterleavedChunkEvaluator
+from ADLStream.evaluation import InterleavedChunkEvaluator
 
 
 class PrequentialEvaluator(InterleavedChunkEvaluator):
@@ -13,7 +13,9 @@ class PrequentialEvaluator(InterleavedChunkEvaluator):
     The fading factor is implemented as follow:
     
         ```
-        new_acc = (loss + fading_factor * previous_acc) / (1 + fading_factor)
+        S = loss + fading_factor * S_prev
+        N = 1 + fading_factor * N_prev
+        preq_loss = S/N
         ``` 
 
     Arguments:
@@ -48,6 +50,8 @@ class PrequentialEvaluator(InterleavedChunkEvaluator):
         **kwargs
     ):
         self.fadding_factor = fadding_factor
+        self.prev_metric = None
+        self.prev_n = None
         super().__init__(
             chunk_size,
             metric,
@@ -60,9 +64,16 @@ class PrequentialEvaluator(InterleavedChunkEvaluator):
 
     def compute_metric(self):
         new_metric = super().compute_metric()
-        if self.metric_history:
-            new_metric = (
-                new_metric + self.metric_history[-1] * self.fadding_factor
-            ) / (1 + self.fadding_factor)
 
-        return new_metric
+        if self.prev_metric is None:
+            self.prev_metric = new_metric
+            self.prev_n = 1
+            return new_metric
+
+        new_metric = new_metric + self.fadding_factor * self.prev_metric
+        n = 1 + self.fadding_factor * self.prev_n
+
+        self.prev_metric = new_metric
+        self.prev_n = n
+
+        return new_metric / n
