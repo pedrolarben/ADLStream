@@ -2,6 +2,28 @@
 import numpy as np
 
 
+def _confusion_matrix(y, o):
+    y, o = _preprocess_predictions(y, o)
+    labels = {l: idx for idx, l in enumerate(np.unique([y, o]).tolist())}
+    matrix = np.zeros((len(labels), len(labels)))
+    for yi, oi in zip(y, o):
+        i, j = labels[yi], labels[oi]
+        matrix[i][j] += 1
+    return matrix
+
+
+def _preprocess_predictions(y, o):
+    if len(y.shape) > 1 and y.shape[1] > 1:
+        # y and o are one-hot encoded
+        y = np.argmax(y, axis=1)
+        o = np.argmax(o, axis=1)
+    else:
+        # y and o are binary probabilities [0, 1]
+        y = y.flatten()
+        o = np.array(o.flatten() >= 0.5, dtype=y.dtype)
+    return y, o
+
+
 def accuracy(y, o):
     """Accuracy score.
 
@@ -12,6 +34,7 @@ def accuracy(y, o):
     Returns:
         float: Mean accuracy.
     """
+    y, o = _preprocess_predictions(y, o)
     return np.mean(y == o)
 
 
@@ -31,8 +54,6 @@ def mae(y, o):
 def kappa(y, o):
     """Cohen kappa score.
     
-    TODO Implement KAPPA
-
     Args:
         y (np.array): Real values.
         o (np.array): Predictions.
@@ -40,7 +61,19 @@ def kappa(y, o):
     Returns:
         float: Kappa.
     """
-    raise NotImplementedError
+    confusion = _confusion_matrix(y, o)
+    n_classes = confusion.shape[0]
+    if n_classes < 2:
+        return 1
+    sum0 = np.sum(confusion, axis=0)
+    sum1 = np.sum(confusion, axis=1)
+    expected = np.outer(sum0, sum1) / np.sum(sum0)
+
+    w_mat = np.ones([n_classes, n_classes], dtype=np.int)
+    w_mat.flat[:: n_classes + 1] = 0
+
+    k = np.sum(w_mat * confusion) / np.sum(w_mat * expected)
+    return 1 - k
 
 
 def auc(y, o):
