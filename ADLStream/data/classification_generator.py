@@ -19,8 +19,8 @@ class ClassificationStreamGenerator(BaseStreamGenerator):
             Defaults to None.
     """
 
-    def __init__(self, stream, label_index=[-1], one_hot_labels=None):
-        super().__init__(stream)
+    def __init__(self, stream, label_index=[-1], one_hot_labels=None, **kwargs):
+        super().__init__(stream, **kwargs)
         self.label_index = label_index if type(label_index) is list else [label_index]
         self.labels = one_hot_labels
         self.one_hot_encoder = None

@@ -30,9 +30,10 @@ class BaseStreamGenerator(ABC):
             Stream source to be feed to the ADLStream framework.
     """
 
-    def __init__(self, stream, max_instances=None):
+    def __init__(self, stream, preprocessing_steps=[], max_instances=None):
         self.stream = stream
         self.num_messages = 0
+        self.preprocessing_steps = preprocessing_steps
         self.max_messages = max_instances
 
     @property
@@ -95,6 +96,11 @@ class BaseStreamGenerator(ABC):
         """
         raise NotImplementedError("Abstract method")
 
+    def _perform_preprocessing_steps(self, x):
+        for preprocessor in self.preprocessing_steps:
+            x = preprocessor.learn_one(x).transform_one(x)
+        return x
+
     def run(self, context):
         """The function that sends data to ADLStream framework
 
@@ -109,5 +115,6 @@ class BaseStreamGenerator(ABC):
         while message is not None:
             (x, y) = self.preprocess(message)
             if x is not None or y is not None:
+                x = self._perform_preprocessing_steps(x)
                 context.add(x, y)
             message = self.next(context)
