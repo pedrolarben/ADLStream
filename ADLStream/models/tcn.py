@@ -16,6 +16,7 @@ def TCN(
     tcn_dropout=0.0,
     return_sequences=True,
     activation="linear",
+    out_activation="linear",
     padding="causal",
     use_skip_connections=True,
     use_batch_norm=False,
@@ -42,8 +43,10 @@ def TCN(
         return_sequences (bool, optional): 
             Whether to return the last output in the output sequence, or the full sequence. 
             Defaults to True.
-        activation (str, optional): 
+        activation (tf activation function, optional): 
             The activation used in the residual blocks o = Activation(x + F(x)). 
+            Defaults to "linear".
+        out_activation (tf activation function, optional): Activation of the output layer.
             Defaults to "linear".
         padding (str, optional): The padding to use in the convolutional layers, 
             can be 'causal' or 'same'. 
@@ -63,7 +66,10 @@ def TCN(
     Returns:
         tf.keras.Model: TCN model
     """
-    inputs = tf.keras.layers.Input(shape=input_shape[-2:])
+    input_shape = input_shape[-len(input_shape) + 1 :]
+    inputs = tf.keras.layers.Input(shape=input_shape)
+    if len(input_shape) <= 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
 
     x = keras_tcn.TCN(
         nb_filters=nb_filters,
@@ -84,7 +90,7 @@ def TCN(
         x = tf.keras.layers.Dense(hidden_units)(x)
         if dense_dropout > 0:
             tf.keras.layers.Dropout(dense_dropout)(x)
-    x = tf.keras.layers.Dense(output_size)(x)
+    x = tf.keras.layers.Dense(output_size, activation=out_activation)(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=x)
     model.compile(optimizer=optimizer, loss=loss)

@@ -13,6 +13,7 @@ def ESN(
     return_sequences=False,
     dense_layers=[32],
     dense_dropout=0,
+    out_activation="linear",
 ):
     """Echo State Network (ESN).
 
@@ -32,11 +33,16 @@ def ESN(
             Defaults to [32].
         dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.
+        out_activation (tf activation function, optional): Activation of the output layer.
+            Defaults to "linear".
 
     Returns:
         tf.keras.Model: ESN model
     """
-    inputs = tf.keras.layers.Input(shape=input_shape[-2:])
+    input_shape = input_shape[-len(input_shape) + 1 :]
+    inputs = tf.keras.layers.Input(shape=input_shape)
+    if len(input_shape) <= 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
 
     # ESN layers
     return_sequences_tmp = return_sequences if len(recurrent_units) == 1 else True
@@ -56,7 +62,7 @@ def ESN(
         x = tf.keras.layers.Dense(hidden_units)(x)
         if dense_dropout > 0:
             x = tf.keras.layers.Dropout(dense_dropout)(dense_dropout)
-    x = tf.keras.layers.Dense(output_size)(x)
+    x = tf.keras.layers.Dense(output_size, activation=out_activation)(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=x)
     model.compile(optimizer=optimizer, loss=loss)
