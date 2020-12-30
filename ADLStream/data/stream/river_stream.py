@@ -10,8 +10,7 @@ class RiverStream(BaseStream):
     logic with streams from river framework. This is extremely usefull in order 
     to use the synthetic stream generators implemented in river.
     
-    For more information about river framework visit its docs:
-        https://github.com/online-ml/river
+    For more information about river framework, visit its [docs](https://github.com/online-ml/river).
 
     Examples:
     ```python

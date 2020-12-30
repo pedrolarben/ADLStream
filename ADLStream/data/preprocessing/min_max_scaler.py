@@ -3,7 +3,10 @@ from ADLStream.data.preprocessing import BasePreprocessor
 
 
 class MinMaxScaler(BasePreprocessor):
-    """Scales the data between 0 and 1.
+    """Transform features by scaling each feature between zero and one.
+
+    This estimator scales and translates each feature (column) individually 
+    such that it is in the the range (0, 1).
 
     The transformation is given by 
         x_scaled = (x - min_x) / (max_x - min_x)
@@ -28,6 +31,14 @@ class MinMaxScaler(BasePreprocessor):
         return max_values
 
     def learn_one(self, x):
+        """Updates `min` and `max` parameters for each feature
+
+        Args:
+            x (list): input data from stream generator.
+
+        Returns:
+            BasePreprocessor: self updated scaler.
+        """
         if self.data_min is None:
             self.data_min = x
             self.data_max = x
@@ -43,6 +54,14 @@ class MinMaxScaler(BasePreprocessor):
         return _safe_div_zero((val - min_val), (max_val - min_val))
 
     def transform_one(self, x):
+        """Scales one instance data
+
+        Args:
+            x (list): input data from stream generator.
+
+        Returns:
+            scaled_x (list): minmax scaled data.
+        """
         assert self.data_min is not None
         scaled_x = [
             self._min_max(v, m, M) for v, m, M in zip(x, self.data_min, self.data_max)
