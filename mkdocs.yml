@@ -29,7 +29,11 @@ nav:
         - FileStream: API/data/stream/FileStream.md
         - CSVFileStream: API/data/stream/CSVFileStream.md
         - KafkaStream: API/data/stream/KafkaStream.md
+        - RiverStream: API/data/stream/RiverStream.md
         - FakeStream: API/data/stream/FakeStream.md
+      - Preprocessing: 
+        - BasePreprocessor: API/data/preprocessing/BasePreprocessor.md
+        - MinMaxScaler: API/data/preprocessing/MinMaxScaler.md
       - BaseStreamGenerator: API/data/BaseStreamGenerator.md
       - ClassificationStreamGenerator: API/data/ClassificationStreamGenerator.md
       - MovingWindowStreamGenerator: API/data/MovingWindowStreamGenerator.md
