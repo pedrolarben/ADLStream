@@ -28,6 +28,12 @@ class BaseStreamGenerator(ABC):
     Arguments:
         stream (inherits ADLStream.data.stream.BaseStream): 
             Stream source to be feed to the ADLStream framework.
+        preprocessing_steps (list of ADLStream.data.preprocessing.BasePreprocessor):
+            List of operations to be perform sequentially over the input data (x).
+            Defaults to [].
+        max_instances (int > 0): Max number of instance to generate.  If None, it will
+            continue generating new message until the stream stops.
+            Defaults to None.
     """
 
     def __init__(self, stream, preprocessing_steps=[], max_instances=None):
@@ -67,7 +73,6 @@ class BaseStreamGenerator(ABC):
                 ),
             )
             context.set_time_out()
-
         return message
 
     @abstractmethod
