@@ -8,11 +8,11 @@ import json
 class KafkaStream(BaseStream):
     """Kafka Stream.
 
-    Stream that consumes messages from a Kafka server.
+    Stream that consumes messages from a *Kafka* server.
 
     For more references check:
-        - https://kafka.apache.org/
-        - https://github.com/dpkp/kafka-python
+        * [https://kafka.apache.org/](https://kafka.apache.org/)
+        * [https://github.com/dpkp/kafka-python](https://github.com/dpkp/kafka-python)
 
     Arguments:
         topic (str): Optional list of topics to subscribe to.
