@@ -22,6 +22,7 @@ def TCN(
     use_batch_norm=False,
     dense_layers=[],
     dense_dropout=0.0,
+    dense_activation="linear",
 ):
     """Temporal Convolutional Network.
 
@@ -62,14 +63,19 @@ def TCN(
             Defaults to [].
         dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop. 
             Defaults to 0.0.
+        dense_activation (tf activation function, optional): Activation function of the dense
+            layers after the convolutional block.
+            Defaults to "linear".
 
     Returns:
         tf.keras.Model: TCN model
     """
     input_shape = input_shape[-len(input_shape) + 1 :]
     inputs = tf.keras.layers.Input(shape=input_shape)
-    if len(input_shape) <= 2:
-        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
+
+    x = inputs
+    if len(input_shape) < 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(x)
 
     x = keras_tcn.TCN(
         nb_filters=nb_filters,
@@ -81,13 +87,13 @@ def TCN(
         activation=activation,
         use_batch_norm=use_batch_norm,
         padding=padding,
-    )(inputs)
+    )(x)
 
     # Dense block
     if return_sequences:
         x = tf.keras.layers.Flatten()(x)
     for hidden_units in dense_layers:
-        x = tf.keras.layers.Dense(hidden_units)(x)
+        x = tf.keras.layers.Dense(hidden_units, activation=dense_activation)(x)
         if dense_dropout > 0:
             tf.keras.layers.Dropout(dense_dropout)(x)
     x = tf.keras.layers.Dense(output_size, activation=out_activation)(x)

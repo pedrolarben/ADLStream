@@ -12,6 +12,7 @@ def LSTM(
     return_sequences=False,
     dense_layers=[],
     dense_dropout=0,
+    dense_activation="linear",
     out_activation="linear",
 ):
     """Long Short Term Memory (LSTM).
@@ -32,6 +33,9 @@ def LSTM(
             Defaults to [].
         dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.
+        dense_activation (tf activation function, optional): Activation function of the dense
+            layers after the convolutional block.
+            Defaults to "linear".
         out_activation (tf activation function, optional): Activation of the output layer.
             Defaults to "linear".
 
@@ -40,19 +44,15 @@ def LSTM(
     """
     input_shape = input_shape[-len(input_shape) + 1 :]
     inputs = tf.keras.layers.Input(shape=input_shape)
-    if len(input_shape) <= 2:
-        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
+
+    x = inputs
+    if len(input_shape) < 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(x)
 
     # LSTM layers
-    return_sequences_tmp = return_sequences if len(recurrent_units) == 1 else True
-    x = tf.keras.layers.LSTM(
-        recurrent_units[0],
-        return_sequences=return_sequences_tmp,
-        dropout=recurrent_dropout,
-    )(inputs)
-    for i, u in enumerate(recurrent_units[1:]):
+    for i, u in enumerate(recurrent_units):
         return_sequences_tmp = (
-            return_sequences if i == len(recurrent_units) - 2 else True
+            return_sequences if i == len(recurrent_units) - 1 else True
         )
         x = tf.keras.layers.LSTM(
             u, return_sequences=return_sequences_tmp, dropout=recurrent_dropout
@@ -62,7 +62,7 @@ def LSTM(
     if return_sequences:
         x = tf.keras.layers.Flatten()(x)
     for hidden_units in dense_layers:
-        x = tf.keras.layers.Dense(hidden_units)(x)
+        x = tf.keras.layers.Dense(hidden_units, activation=dense_activation)(x)
         if dense_dropout > 0:
             x = tf.keras.layers.Dropout(dense_dropout)(dense_dropout)
     x = tf.keras.layers.Dense(output_size, activation=out_activation)(x)

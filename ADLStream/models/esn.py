@@ -41,17 +41,15 @@ def ESN(
     """
     input_shape = input_shape[-len(input_shape) + 1 :]
     inputs = tf.keras.layers.Input(shape=input_shape)
-    if len(input_shape) <= 2:
-        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
+
+    x = inputs
+    if len(input_shape) < 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(x)
 
     # ESN layers
-    return_sequences_tmp = return_sequences if len(recurrent_units) == 1 else True
-    x = tfa.layers.ESN(
-        recurrent_units[0], return_sequences=return_sequences_tmp, use_norm2=True
-    )(inputs)
-    for i, u in enumerate(recurrent_units[1:]):
+    for i, u in enumerate(recurrent_units):
         return_sequences_tmp = (
-            return_sequences if i == len(recurrent_units) - 2 else True
+            return_sequences if i == len(recurrent_units) - 1 else True
         )
         x = tfa.layers.ESN(u, return_sequences=return_sequences_tmp, use_norm2=True)(x)
 

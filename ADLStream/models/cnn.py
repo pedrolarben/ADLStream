@@ -54,20 +54,13 @@ def CNN(
 
     input_shape = input_shape[-len(input_shape) + 1 :]
     inputs = tf.keras.layers.Input(shape=input_shape)
-    if len(input_shape) <= 2:
-        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(inputs)
 
-    # First conv block
-    x = tf.keras.layers.Conv1D(
-        conv_layers[0], kernel_sizes[0], activation=activation, padding="same"
-    )(x)
-    if pool_sizes[0] and x.shape[-2] // pool_sizes[0] > 1:
-        x = tf.keras.layers.MaxPool1D(pool_size=pool_sizes[0])(x)
+    x = inputs
+    if len(input_shape) < 2:
+        x = tf.keras.layers.Reshape((inputs.shape[1], 1))(x)
 
     # Rest of the conv blocks
-    for chanels, kernel_size, pool_size in zip(
-        conv_layers[1:], kernel_sizes[1:], pool_sizes[1:]
-    ):
+    for chanels, kernel_size, pool_size in zip(conv_layers, kernel_sizes, pool_sizes):
         x = tf.keras.layers.Conv1D(
             chanels, kernel_size, activation=activation, padding="same"
         )(x)
