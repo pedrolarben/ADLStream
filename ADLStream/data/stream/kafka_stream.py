@@ -11,6 +11,7 @@ class KafkaStream(BaseStream):
     Stream that consumes messages from a *Kafka* server.
 
     For more references check:
+    
         * [https://kafka.apache.org/](https://kafka.apache.org/)
         * [https://github.com/dpkp/kafka-python](https://github.com/dpkp/kafka-python)
 
