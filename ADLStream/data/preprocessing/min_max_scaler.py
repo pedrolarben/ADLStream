@@ -14,20 +14,29 @@ class MinMaxScaler(BasePreprocessor):
     where min_x is the minimun value seen until now for the feature x and 
     max_x represents the maximun value seen until now for the feauter x.
 
+    Arguments:
+        share_params (bool): Whether to share scaler parameters among columns.
+            Defaults to False.  
+
     """
 
-    def __init__(self):
+    def __init__(self, share_params=False):
+        self.share_params = share_params
         self.data_min = None
         self.data_max = None
 
     def _minimum(self, a, b):
         assert len(a) == len(b)
         min_values = [min(a[i], b[i]) for i in range(len(a))]
+        if self.share_params:
+            min_values = [min(min_values) for _ in min_values]
         return min_values
 
     def _maximum(self, a, b):
         assert len(a) == len(b)
         max_values = [max(a[i], b[i]) for i in range(len(a))]
+        if self.share_params:
+            max_values = [max(max_values) for _ in max_values]
         return max_values
 
     def learn_one(self, x):
@@ -42,9 +51,8 @@ class MinMaxScaler(BasePreprocessor):
         if self.data_min is None:
             self.data_min = x
             self.data_max = x
-        else:
-            self.data_min = self._minimum(x, self.data_min)
-            self.data_max = self._maximum(x, self.data_max)
+        self.data_min = self._minimum(x, self.data_min)
+        self.data_max = self._maximum(x, self.data_max)
         return self
 
     def _min_max(self, val, min_val, max_val):
