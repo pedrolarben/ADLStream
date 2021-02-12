@@ -64,7 +64,7 @@ def LSTM(
     for hidden_units in dense_layers:
         x = tf.keras.layers.Dense(hidden_units, activation=dense_activation)(x)
         if dense_dropout > 0:
-            x = tf.keras.layers.Dropout(dense_dropout)(dense_dropout)
+            x = tf.keras.layers.Dropout(dense_dropout)(x)
     x = tf.keras.layers.Dense(output_size, activation=out_activation)(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=x)
