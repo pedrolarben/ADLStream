@@ -8,27 +8,29 @@ This system has two separated layers for training and testing that work simultan
 The dual-layer architecture  allows  to  alleviate  the  computational  cost problem  of  complex  deep  learning  models,  such  as convolutional neural networks, for the data streaming context,  in  which  speed  is  essential.
 
 <p align="center">
-  <img width="451" height="368" src="https://raw.githubusercontent.com/pedrolarben/ADLStream/master/docs/img/Parallel-NN.png">
+  <img width="100%"  src="https://raw.githubusercontent.com/pedrolarben/ADLStream/master/docs/img/ADLStream.png">
 </p>
 
 Complete documentation and API of ADLStream can be found in [adlstream.readthedocs.io](https://adlstream.readthedocs.io).
 
 
-- [Installation Guide](#installation-guide)
-  * [GPU support](#gpu-support)
-    + [Hardware requirements <a name="hardware"></a>](#hardware-requirements)
-    + [Software requirements <a name="software"></a>](#software-requirements)
-  * [Installing ADLStream](#installing-adlstream)
-- [Getting Started](#getting-started)
-    + [1. Create the stream](#1-create-the-stream)
-    + [2. Create the stream generator.](#2-create-the-stream-generator)
-    + [3. Configure the evaluation process.](#3-configure-the-evaluation-process)
-    + [4. Configure model and create ADLStream](#4-configure-model-and-create-adlstream)
-    + [5. Run ADLStream & Results](#5-run-adlstream---results)
-- [Research papers related](#research-papers-related)
-- [Contributing](#contributing)
-- [License](#license)
-- [Authors](#authors)
+- [ADLStream](#adlstream)
+        - [Asynchronous dual-pipeline deep learning framework for online data stream mining.](#asynchronous-dual-pipeline-deep-learning-framework-for-online-data-stream-mining)
+  - [Installation Guide](#installation-guide)
+    - [GPU support](#gpu-support)
+      - [Hardware requirements](#hardware-requirements)
+      - [Software requirements](#software-requirements)
+    - [Installing ADLStream](#installing-adlstream)
+  - [Getting Started](#getting-started)
+      - [1. Create the stream](#1-create-the-stream)
+      - [2. Create the stream generator.](#2-create-the-stream-generator)
+      - [3. Configure the evaluation process.](#3-configure-the-evaluation-process)
+      - [4. Configure model and create ADLStream](#4-configure-model-and-create-adlstream)
+      - [5. Run ADLStream & Results](#5-run-adlstream--results)
+  - [Research papers related](#research-papers-related)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Authors](#authors)
 
 ## Installation Guide
 

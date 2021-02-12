@@ -8,6 +8,6 @@ This system has two separated layers for training and testing that work simultan
 The dual-layer architecture  allows  to  alleviate  the  computational  cost problem  of  complex  deep  learning  models,  such  as convolutional neural networks, for the data streaming context,  in  which  speed  is  essential.
 
 <p align="center">
-  <img width="451" height="368" src="https://raw.githubusercontent.com/pedrolarben/ADLStream/master/docs/img/Parallel-NN.png">
+  <img width="451" height="368" src="https://raw.githubusercontent.com/pedrolarben/ADLStream/master/docs/img/ADLStream.png">
 </p>
 
