@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://adlstream.readthedocs.io/)
 [![Downloads](https://pepy.tech/badge/adlstream)](https://pepy.tech/project/adlstream)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![Python package](https://github.com/pedrolarben/ADLStream/workflows/Python%20package/badge.svg)
+![CI](https://github.com/pedrolarben/ADLStream/workflows/CI/badge.svg)
 
 ##### Asynchronous dual-pipeline deep learning framework for online data stream mining. 
 
