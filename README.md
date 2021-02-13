@@ -1,11 +1,11 @@
 # ADLStream
 
 [![PyPI](https://badge.fury.io/py/ADLStream.svg)](https://badge.fury.io/py/ADLStream) 
-[![Python 3.6](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://www.python.org/downloads/release/python-360/)
-[![Documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://adlstream.readthedocs.io/)
-[![Downloads](https://pepy.tech/badge/adlstream)](https://pepy.tech/project/adlstream)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Documentation Status](https://readthedocs.org/projects/adlstream/badge/?version=latest)](https://adlstream.readthedocs.io/en/latest/?badge=latest)
 ![CI](https://github.com/pedrolarben/ADLStream/workflows/CI/badge.svg?branch=master)
+[![Downloads](https://pepy.tech/badge/adlstream)](https://pepy.tech/project/adlstream)
+[![Python 3.6](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://www.python.org/downloads/release/python-360/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ##### Asynchronous dual-pipeline deep learning framework for online data stream mining. 
 
