@@ -1,6 +1,6 @@
 # ADLStream
 
-[![PyPI](https://badge.fury.io/py/ADLStream.svg)](https://badge.fury.io/py/ADLStream) 
+[![PyPI](https://img.shields.io/pypi/v/ADLStream.svg)](https://pypi.org/project/ADLStream/) 
 [![Documentation Status](https://readthedocs.org/projects/adlstream/badge/?version=latest)](https://adlstream.readthedocs.io/en/latest/?badge=latest)
 ![CI](https://github.com/pedrolarben/ADLStream/workflows/CI/badge.svg?branch=master)
 [![Downloads](https://pepy.tech/badge/adlstream)](https://pepy.tech/project/adlstream)
