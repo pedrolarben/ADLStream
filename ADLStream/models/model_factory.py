@@ -7,6 +7,7 @@ from ADLStream.models import ERNN
 from ADLStream.models import ESN
 from ADLStream.models import CNN
 from ADLStream.models import TCN
+from ADLStream.models import Transformer
 
 MODEL_FACTORY = {
     "MLP": MLP,
@@ -16,6 +17,7 @@ MODEL_FACTORY = {
     "ESN": ESN,
     "CNN": CNN,
     "TCN": TCN,
+    "TRANSFORMER": Transformer,
 }
 
 

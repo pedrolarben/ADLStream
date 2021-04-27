@@ -51,6 +51,7 @@ nav:
       - ESN: API/models/esn.md
       - CNN: API/models/cnn.md
       - TCN: API/models/tcn.md
+      - Transformer: API/models/transformer.md
   - Research: research.md 
   - Contributing: contributing.md
   - License: license_page.md
