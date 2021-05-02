@@ -139,6 +139,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 # Decoder
 class DecoderLayer(tf.keras.layers.Layer):
     """Class that creates and computes the decoder layer.
+
     Args:
       d_model (int): Dimension of the model.
       num_heads (int): Number of heads of the multihead attention layer.
@@ -146,11 +147,11 @@ class DecoderLayer(tf.keras.layers.Layer):
         point wise feed forward network.
       activation (tf.keras.Loss.Activation/String): Activation function for the
         point wise feed forward network. Defaults to relu.
-      rate (float between 0 and 1): Fraction of the dense units to drop.
+      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
         Defaults to 0.1.
     """
 
-    def __init__(self, d_model, num_heads, dff, activation="relu", rate=0.1):
+    def __init__(self, d_model, num_heads, dff, activation="relu", dropout_rate=0.1):
         super().__init__()
 
         self.mha1 = MultiHeadAttention(d_model, num_heads)
@@ -160,9 +161,9 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
-        self.dropout1 = tf.keras.layers.Dropout(rate)
-        self.dropout2 = tf.keras.layers.Dropout(rate)
-        self.dropout3 = tf.keras.layers.Dropout(rate)
+        self.dropout1 = tf.keras.layers.Dropout(dropout_rate)
+        self.dropout2 = tf.keras.layers.Dropout(dropout_rate)
+        self.dropout3 = tf.keras.layers.Dropout(dropout_rate)
 
         self.dense1 = tf.keras.layers.Dense(dff, activation=activation)
         self.dense2 = tf.keras.layers.Dense(d_model)
@@ -208,7 +209,7 @@ class Decoder(tf.keras.layers.Layer):
       maximum_position_encoding (int): Maximum position encoding.
       activation (tf.keras.Loss.Activation/String): Activation function for the
         point wise feed forward network. Defaults to relu.
-      rate (float between 0 and 1): Fraction of the dense units to drop.
+      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
         Defaults to 0.1.
     """
 
@@ -220,7 +221,7 @@ class Decoder(tf.keras.layers.Layer):
         dff,
         maximum_position_encoding,
         activation="relu",
-        rate=0.1,
+        dropout_rate=0.1,
     ):
 
         super().__init__()
@@ -232,10 +233,10 @@ class Decoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(maximum_position_encoding, d_model)
 
         self.dec_layers = [
-            DecoderLayer(d_model, num_heads, dff, activation, rate)
+            DecoderLayer(d_model, num_heads, dff, activation, dropout_rate)
             for _ in range(num_layers)
         ]
-        self.dropout = tf.keras.layers.Dropout(rate)
+        self.dropout = tf.keras.layers.Dropout(dropout_rate)
 
     def call(self, x, enc_output, training, look_ahead_mask):
         """
@@ -278,7 +279,7 @@ class TransformerModel(tf.keras.Model):
       pe_target (int): Maximum position encoding for the target.
       activation (tf.keras.Loss.Activation/String): Activation function for the
         point wise feed forward network. Defaults to relu.
-      rate (float between 0 and 1): Fraction of the dense units to drop.
+      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
         Defaults to 0.1.
     """
 
@@ -294,17 +295,17 @@ class TransformerModel(tf.keras.Model):
         pe_input,
         pe_target,
         activation="relu",
-        rate=0.1,
+        dropout_rate=0.1,
     ):
         super().__init__()
         self.linear = tf.keras.layers.Dense(d_model)
 
         self.pos_encoding = positional_encoding(pe_input, d_model)
 
-        self.dropout = tf.keras.layers.Dropout(rate)
+        self.dropout = tf.keras.layers.Dropout(dropout_rate)
 
         self.decoder = Decoder(
-            num_layers, d_model, num_heads, dff, pe_target, activation, rate
+            num_layers, d_model, num_heads, dff, pe_target, activation, dropout_rate
         )
 
         self.final_layer = tf.keras.layers.Dense(target_shape[1])
@@ -364,7 +365,7 @@ class TransformerModel(tf.keras.Model):
           training (bool): True if the network is in training mode, false if not.
 
         Returns:
-          tf.Tensor (final_output): Output tensor.
+          tf.Tensor: Output tensor.
         """
         x, combined_mask, tar_inp = inps
         seq_len = tf.shape(x)[1]
@@ -386,7 +387,7 @@ class TransformerModel(tf.keras.Model):
           data (tuple): Tuple with the input and the target tf.Tensors.
 
         Returns:
-          Dictionary with the model metrics
+          dict: Training step metrics.
         """
         inp, tar = data
         tar = tf.reshape(
@@ -409,13 +410,13 @@ class TransformerModel(tf.keras.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def test_step(self, data):
-        """Function that calculates a train step.
+        """Function that calculates a test step.
 
         Args:
           data (tuple): Tuple of the input and the target tf.Tensors.
 
         Returns:
-          Dictionary with the model metrics
+          dict: Evaluation step metrics.
         """
 
         x, tar = data
@@ -439,13 +440,13 @@ class TransformerModel(tf.keras.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def predict_step(self, data):
-        """Function that calculates a train step.
+        """Function that calculates a prediction step.
 
         Args:
           data (tf.Tensor): Input.
 
         Returns:
-          tf.Tensor (output): Output tensor.
+          tf.Tensor: Output tensor.
         """
         x = data
 
@@ -483,13 +484,13 @@ def Transformer(
     loss,
     optimizer,
     output_shape,
-    num_heads,
-    num_layers,
-    d_model,
-    dff,
+    num_heads = 4,
+    num_layers = 2,
+    d_model = 16,
+    dff = 64,
     pe_input=1000,
     pe_target=1000,
-    rate=0.1,
+    dropout_rate=0.1,
     activation="relu",
 ):
 
@@ -499,19 +500,21 @@ def Transformer(
         input_shape (tuple): Shape of the input data.
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
-
+        optimizer (tf.keras.Optimizer): Optimizer that implements the training algorithm.
+          Use "custom" in order to use a customize optimizer for the transformer model.
         output_shape (tuple): Shape of the output data.
         num_head (int): Number of heads of the attention layer.
-        num_layers (int): Number of decoder and encoder layers.
+          Defaults to 4.
+        num_layers (int): Number of decoder and encoder layers. Defaults to 2.
         d_model (int): Number of neurons of the dense layer at the beginning
-          of the encoder and decoder.
+          of the encoder and decoder. Defaults to 16.
         dff (int): Number of neurons of the rest of dense layers in the model.
-        optimizer (tf.keras.Optimizer): Optimizer that implements theraining algorithm.
+          Defaults to 64.
         pe_input (int): Maximum position encoding for the input.
           Defaults to 1000.
         pe_output (int): Maximum position encoding for the output.
           Defaults to 1000.
-        rate (float between 0 and 1): Fraction of the dense units to drop.
+        dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
           Defaults to 0.1.
         activation (tf.keras.Loss.Activation/String): Activation function for the
           point wise feed forward network. Defaults to "relu".
@@ -530,7 +533,7 @@ def Transformer(
         dff=dff,
         pe_input=pe_input,
         pe_target=pe_target,
-        rate=rate,
+        dropout_rate=dropout_rate,
         activation=activation,
     )
     if optimizer == "custom":
@@ -543,7 +546,8 @@ def Transformer(
     inp_len = input_shape[1]
     inp = np.arange(inp_len * att).reshape((1, inp_len, att))
     tar_inp = np.arange(output_size).reshape((1, output_shape[0], att))
-
+    
+    #First call to the model, in order to initialize the weights of the model, with arbitrary data.
     model.compile(optimizer=optimizer, loss=loss)
     model.call((inp, None, tar_inp), False)
 
