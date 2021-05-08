@@ -8,8 +8,6 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
     This class performs a moving-window preprocessing method for time series forecasting
     problems.
 
-    TODO: Implement variable selection for x.
-
     Arguments:
         stream (inherits ADLStream.data.stream.BaseStream): 
             Stream source to be feed to the ADLStream framework.
