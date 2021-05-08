@@ -484,10 +484,10 @@ def Transformer(
     loss,
     optimizer,
     output_shape,
-    num_heads = 4,
-    num_layers = 2,
-    d_model = 16,
-    dff = 64,
+    num_heads=4,
+    num_layers=2,
+    d_model=16,
+    dff=64,
     pe_input=1000,
     pe_target=1000,
     dropout_rate=0.1,
@@ -546,8 +546,8 @@ def Transformer(
     inp_len = input_shape[1]
     inp = np.arange(inp_len * att).reshape((1, inp_len, att))
     tar_inp = np.arange(output_size).reshape((1, output_shape[0], att))
-    
-    #First call to the model, in order to initialize the weights of the model, with arbitrary data.
+
+    # First call to the model, in order to initialize the weights of the model, with arbitrary data.
     model.compile(optimizer=optimizer, loss=loss)
     model.call((inp, None, tar_inp), False)
 

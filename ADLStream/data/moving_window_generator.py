@@ -22,7 +22,15 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
             If None, every feature is considered as target feature. Defaults to None.  
     """
 
-    def __init__(self, stream, past_history, forecasting_horizon, shift=1, target_idx=None, **kwargs):
+    def __init__(
+        self,
+        stream,
+        past_history,
+        forecasting_horizon,
+        shift=1,
+        target_idx=None,
+        **kwargs
+    ):
         super().__init__(stream, **kwargs)
         self.past_history = past_history
         self.forecasting_horizon = forecasting_horizon
@@ -38,7 +46,7 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
             res = [message[self.target_idx]]
         elif isinstance(self.target_idx, list):
             res = [message[idx] for idx in self.target_idx]
-        else: 
+        else:
             res = message
         return res
 
