@@ -8,7 +8,7 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
     This class performs a moving-window preprocessing method for time series forecasting
     problems.
 
-    TODO: Implement variable selection for x and y.
+    TODO: Implement variable selection for x.
 
     Arguments:
         stream (inherits ADLStream.data.stream.BaseStream): 
@@ -17,23 +17,36 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
         forecasting_horizon (int): 
             The width (number of time steps) of the label window (`y`).
         shift (int >=1, optional): The time offset between input and label windows.
-            Defaults to 1     
+            Defaults to 1.
+        target_idx (int or list, optional): The index/indices of the target feature/s.
+            If None, every feature is considered as target feature. Defaults to None.  
     """
 
-    def __init__(self, stream, past_history, forecasting_horizon, shift=1, **kwargs):
+    def __init__(self, stream, past_history, forecasting_horizon, shift=1, target_idx=None, **kwargs):
         super().__init__(stream, **kwargs)
         self.past_history = past_history
         self.forecasting_horizon = forecasting_horizon
         self.shift = shift
+        self.target_idx = target_idx
 
         self.x_window = []
         self.y_window = []
+
+    def get_y(self, message):
+        res = None
+        if isinstance(self.target_idx, int):
+            res = [message[self.target_idx]]
+        elif isinstance(self.target_idx, list):
+            res = [message[idx] for idx in self.target_idx]
+        else: 
+            res = message
+        return res
 
     def preprocess(self, message):
         x, y = None, None
         self.x_window.append(message)
         if self.num_messages >= self.past_history + self.shift:
-            self.y_window.append(message)
+            self.y_window.append(self.get_y(message))
 
         if len(self.x_window) > self.past_history:
             self.x_window.pop(0)
