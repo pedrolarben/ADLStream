@@ -285,6 +285,7 @@ class TransformerModel(tf.keras.Model):
 
     def __init__(
         self,
+        attribute,
         num_layers,
         d_model,
         num_heads,
@@ -312,6 +313,8 @@ class TransformerModel(tf.keras.Model):
 
         self.target_shape = target_shape
 
+        self.attribute = attribute
+
     def _preprocess_tr_input(self, X, y):
         """Function that calculates the input of the decoder.
 
@@ -334,8 +337,12 @@ class TransformerModel(tf.keras.Model):
 
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
 
-        else:
 
+        elif X.shape[-1] != y.shape[-1]:
+            tar_inp1 = tf.gather(X, [self.attribute], axis=-1)
+            tar_inp1 = tf.gather(tar_inp1, [tar_inp1.shape[1] - 1], axis=1)
+            tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
+        else:
             tar_inp1 = tf.gather(X, [X.shape[1] - 1], axis=1)
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
 
@@ -397,7 +404,9 @@ class TransformerModel(tf.keras.Model):
         combined_mask = self._create_masks(inp, tar_inp)
         with tf.GradientTape() as tape:
             predictions = self((inp, combined_mask, tar_inp), True)
-
+            print("Shape del inp: ",inp.shape)
+            print("Shape del tar: ",tar.shape)
+            print("Shape del tar_inp: ",tar_inp.shape)
             if len(predictions.shape) != len(tar.shape):
                 predictions = predictions[:, :, 0]
             loss = self.compiled_loss(
@@ -427,6 +436,10 @@ class TransformerModel(tf.keras.Model):
         combined_mask = None
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
 
+        if self.attribute != None:
+          tar_inp = tf.gather(x, [self.attribute], axis=-1)
+          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
 
@@ -452,6 +465,10 @@ class TransformerModel(tf.keras.Model):
 
         combined_mask = None
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
+
+        if self.attribute != None:
+          tar_inp = tf.gather(x, [self.attribute], axis=-1)
+          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -484,10 +501,11 @@ def Transformer(
     loss,
     optimizer,
     output_shape,
-    num_heads = 4,
-    num_layers = 2,
-    d_model = 16,
-    dff = 64,
+    attribute= None,
+    num_heads=4,
+    num_layers=2,
+    d_model=16,
+    dff=64,
     pe_input=1000,
     pe_target=1000,
     dropout_rate=0.1,
@@ -497,6 +515,9 @@ def Transformer(
     """Transformer
 
     Args:
+        attribute (int): Index of the attribute that we want to predict, if the number of 
+          attributes of the input is different from the ones of the output. 
+          Defaults to None.
         input_shape (tuple): Shape of the input data.
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
@@ -524,6 +545,7 @@ def Transformer(
     """
 
     model = TransformerModel(
+        attribute = attribute,
         input_size=input_shape[1],
         target_size=output_size,
         target_shape=output_shape,
@@ -542,12 +564,14 @@ def Transformer(
             learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9
         )
 
-    att = input_shape[-1]
+    att_inp = input_shape[-1]
+    att_out = output_shape[-1]
+
     inp_len = input_shape[1]
-    inp = np.arange(inp_len * att).reshape((1, inp_len, att))
-    tar_inp = np.arange(output_size).reshape((1, output_shape[0], att))
-    
-    #First call to the model, in order to initialize the weights of the model, with arbitrary data.
+    inp = np.arange(inp_len * att_inp).reshape((1, inp_len, att_inp))
+    tar_inp = np.arange(output_size).reshape((1, output_shape[0], att_out))
+
+    # First call to the model, in order to initialize the weights of the model, with arbitrary data.
     model.compile(optimizer=optimizer, loss=loss)
     model.call((inp, None, tar_inp), False)
 
