@@ -267,6 +267,9 @@ class TransformerModel(tf.keras.Model):
     """Class that creates and computes the Transformer.
 
     Args:
+      attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
+        attributes of the input is different from the ones of the output. 
+        Defaults to None.
       num_layers (int): Number of decoder layers of the model.
       d_model (int): Dimension of the model.
       num_heads (int): Number of heads of the multihead attention layer.
@@ -339,7 +342,12 @@ class TransformerModel(tf.keras.Model):
 
 
         elif X.shape[-1] != y.shape[-1]:
-            tar_inp1 = tf.gather(X, [self.attribute], axis=-1)
+            elements = []
+            for at in attribute:
+              elements.append(tf.gather(X, [at], axis=-1))
+              
+            tar_inp1 = tf.concat(elements, axis=-1)
+
             tar_inp1 = tf.gather(tar_inp1, [tar_inp1.shape[1] - 1], axis=1)
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
         else:
@@ -404,9 +412,6 @@ class TransformerModel(tf.keras.Model):
         combined_mask = self._create_masks(inp, tar_inp)
         with tf.GradientTape() as tape:
             predictions = self((inp, combined_mask, tar_inp), True)
-            print("Shape del inp: ",inp.shape)
-            print("Shape del tar: ",tar.shape)
-            print("Shape del tar_inp: ",tar_inp.shape)
             if len(predictions.shape) != len(tar.shape):
                 predictions = predictions[:, :, 0]
             loss = self.compiled_loss(
@@ -515,16 +520,16 @@ def Transformer(
     """Transformer
 
     Args:
-        attribute (int): Index of the attribute that we want to predict, if the number of 
-          attributes of the input is different from the ones of the output. 
-          Defaults to None.
         input_shape (tuple): Shape of the input data.
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
         optimizer (tf.keras.Optimizer): Optimizer that implements the training algorithm.
           Use "custom" in order to use a customize optimizer for the transformer model.
         output_shape (tuple): Shape of the output data.
-        num_head (int): Number of heads of the attention layer.
+        attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
+          attributes of the input is different from the ones of the output. 
+          Defaults to None.
+        num_heads (int): Number of heads of the attention layer.
           Defaults to 4.
         num_layers (int): Number of decoder and encoder layers. Defaults to 2.
         d_model (int): Number of neurons of the dense layer at the beginning
