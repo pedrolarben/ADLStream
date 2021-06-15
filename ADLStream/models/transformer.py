@@ -267,6 +267,9 @@ class TransformerModel(tf.keras.Model):
     """Class that creates and computes the Transformer.
 
     Args:
+      attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
+        attributes of the input is different from the ones of the output. 
+        Defaults to None.
       num_layers (int): Number of decoder layers of the model.
       d_model (int): Dimension of the model.
       num_heads (int): Number of heads of the multihead attention layer.
@@ -285,6 +288,7 @@ class TransformerModel(tf.keras.Model):
 
     def __init__(
         self,
+        attribute,
         num_layers,
         d_model,
         num_heads,
@@ -312,6 +316,8 @@ class TransformerModel(tf.keras.Model):
 
         self.target_shape = target_shape
 
+        self.attribute = attribute
+
     def _preprocess_tr_input(self, X, y):
         """Function that calculates the input of the decoder.
 
@@ -334,8 +340,17 @@ class TransformerModel(tf.keras.Model):
 
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
 
-        else:
 
+        elif X.shape[-1] != y.shape[-1]:
+            elements = []
+            for at in attribute:
+              elements.append(tf.gather(X, [at], axis=-1))
+              
+            tar_inp1 = tf.concat(elements, axis=-1)
+
+            tar_inp1 = tf.gather(tar_inp1, [tar_inp1.shape[1] - 1], axis=1)
+            tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
+        else:
             tar_inp1 = tf.gather(X, [X.shape[1] - 1], axis=1)
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
 
@@ -397,7 +412,6 @@ class TransformerModel(tf.keras.Model):
         combined_mask = self._create_masks(inp, tar_inp)
         with tf.GradientTape() as tape:
             predictions = self((inp, combined_mask, tar_inp), True)
-
             if len(predictions.shape) != len(tar.shape):
                 predictions = predictions[:, :, 0]
             loss = self.compiled_loss(
@@ -427,6 +441,10 @@ class TransformerModel(tf.keras.Model):
         combined_mask = None
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
 
+        if self.attribute != None:
+          tar_inp = tf.gather(x, [self.attribute], axis=-1)
+          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
 
@@ -452,6 +470,10 @@ class TransformerModel(tf.keras.Model):
 
         combined_mask = None
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
+
+        if self.attribute != None:
+          tar_inp = tf.gather(x, [self.attribute], axis=-1)
+          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -484,6 +506,7 @@ def Transformer(
     loss,
     optimizer,
     output_shape,
+    attribute= None,
     num_heads=4,
     num_layers=2,
     d_model=16,
@@ -503,7 +526,10 @@ def Transformer(
         optimizer (tf.keras.Optimizer): Optimizer that implements the training algorithm.
           Use "custom" in order to use a customize optimizer for the transformer model.
         output_shape (tuple): Shape of the output data.
-        num_head (int): Number of heads of the attention layer.
+        attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
+          attributes of the input is different from the ones of the output. 
+          Defaults to None.
+        num_heads (int): Number of heads of the attention layer.
           Defaults to 4.
         num_layers (int): Number of decoder and encoder layers. Defaults to 2.
         d_model (int): Number of neurons of the dense layer at the beginning
@@ -524,6 +550,7 @@ def Transformer(
     """
 
     model = TransformerModel(
+        attribute = attribute,
         input_size=input_shape[1],
         target_size=output_size,
         target_shape=output_shape,
@@ -542,10 +569,12 @@ def Transformer(
             learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9
         )
 
-    att = input_shape[-1]
+    att_inp = input_shape[-1]
+    att_out = output_shape[-1]
+
     inp_len = input_shape[1]
-    inp = np.arange(inp_len * att).reshape((1, inp_len, att))
-    tar_inp = np.arange(output_size).reshape((1, output_shape[0], att))
+    inp = np.arange(inp_len * att_inp).reshape((1, inp_len, att_inp))
+    tar_inp = np.arange(output_size).reshape((1, output_shape[0], att_out))
 
     # First call to the model, in order to initialize the weights of the model, with arbitrary data.
     model.compile(optimizer=optimizer, loss=loss)
