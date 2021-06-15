@@ -343,7 +343,7 @@ class TransformerModel(tf.keras.Model):
 
         elif X.shape[-1] != y.shape[-1]:
             elements = []
-            for at in attribute:
+            for at in self.attribute:
               elements.append(tf.gather(X, [at], axis=-1))
               
             tar_inp1 = tf.concat(elements, axis=-1)
