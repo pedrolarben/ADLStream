@@ -53,7 +53,7 @@ def mae(y, o):
 
 def kappa(y, o):
     """Cohen kappa score.
-    
+
     Args:
         y (np.array): Real values.
         o (np.array): Predictions.
@@ -78,7 +78,7 @@ def kappa(y, o):
 
 def auc(y, o):
     """Area under curve (AUC).
-    
+
     TODO Implement AUC
 
     Args:
@@ -93,7 +93,7 @@ def auc(y, o):
 
 def mape(y, o):
     """Mean Absolute Percentage Error (MAPE).
-    
+
     TODO Implement MAPE
 
     Args:
@@ -108,7 +108,7 @@ def mape(y, o):
 
 def wape(y, o):
     """Weighted Absolute Percentage Error (WAPE).
-    
+
     TODO Implement WAPE
 
     Args:

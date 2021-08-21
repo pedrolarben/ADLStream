@@ -7,9 +7,9 @@ class RiverStream(BaseStream):
     """River stream wrapper
 
     This class acts as a wrapper for river streams, allowing to use ADLStream
-    logic with streams from river framework. This is extremely usefull in order 
+    logic with streams from river framework. This is extremely usefull in order
     to use the synthetic stream generators implemented in river.
-    
+
     For more information about river framework, visit its [docs](https://github.com/online-ml/river).
 
     Examples:
@@ -24,10 +24,10 @@ class RiverStream(BaseStream):
     ```
 
     Arguments:
-        dataset (inherits from river Dataset class): original stream from river 
+        dataset (inherits from river Dataset class): original stream from river
             framework.
-        stream_period (int >=0, optional): Stream time period in milliseconds. 
-            It is the minimun time between consecutive messages in the stream. If it 
+        stream_period (int >=0, optional): Stream time period in milliseconds.
+            It is the minimun time between consecutive messages in the stream. If it
             is 0, when a message is required (`next`), it is sent as soon as possible.
             Defaults to 0.
         timeout (int >0, optional): Stream time out in milliseconds.

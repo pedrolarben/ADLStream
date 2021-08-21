@@ -6,15 +6,15 @@ from ADLStream.evaluation import metrics, BaseEvaluator
 class InterleavedChunkEvaluator(BaseEvaluator):
     """Interleave chunks Evaluator.
 
-    THis evaluator incrementally updates the accuracy by evaluating chunks of data 
+    THis evaluator incrementally updates the accuracy by evaluating chunks of data
     sequentially.
 
-    
+
     Arguments:
         chunck_size (int): Number of instances per chunk.
-            the particular case of chunk_size = 1, represents prequential the 
+            the particular case of chunk_size = 1, represents prequential the
             interleaved train-then-test approach.
-        metric (str): loss function. 
+        metric (str): loss function.
             Possible options can be found in ADLStream.evaluation.metrics.
         results_file (str, optional): Name of the csv file where to write results.
             If None, no csv file is created.
@@ -25,7 +25,7 @@ class InterleavedChunkEvaluator(BaseEvaluator):
             Defaults to True.
         plot_file (str, optional): Name of the plot image file.
             If None, no image is saved.
-            Defaults to None.        
+            Defaults to None.
     """
 
     def __init__(
@@ -51,7 +51,9 @@ class InterleavedChunkEvaluator(BaseEvaluator):
 
     def compute_metric(self):
         new_metric = metrics.evaluate(
-            self.metric, self.y_eval[: self.chunk_size], self.o_eval[: self.chunk_size],
+            self.metric,
+            self.y_eval[: self.chunk_size],
+            self.o_eval[: self.chunk_size],
         )
 
         return new_metric

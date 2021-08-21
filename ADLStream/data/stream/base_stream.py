@@ -7,7 +7,7 @@ import time
 class BaseStream(ABC):
     """Abstract Base Stream.
 
-    This is the base class for implementing streams from custom sources. 
+    This is the base class for implementing streams from custom sources.
 
     Every `Stream` must have the properties below and implement `get_message`, which
     should return a stream message as an array of any dimensions. Other methods such as
@@ -23,20 +23,20 @@ class BaseStream(ABC):
             def start(self):
                 random.seed(self.seed)
                 self.super().start()
-            
+
             def get_message(self):
                 message = [random.random()]
                 return message
-        
+
         stream = RandomStream()
         stream.start()
         message = stream.next()
-        
+
     ```
 
     Arguments:
-        stream_period (int >=0, optional): Stream time period in milliseconds. 
-            It is the minimun time between consecutive messages in the stream. If it 
+        stream_period (int >=0, optional): Stream time period in milliseconds.
+            It is the minimun time between consecutive messages in the stream. If it
             is 0, when a message is required (`next`), it is sent as soon as possible.
             Defaults to 0.
         timeout (int >0, optional): Stream time out in milliseconds.
