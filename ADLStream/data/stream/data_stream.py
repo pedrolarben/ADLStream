@@ -21,7 +21,7 @@ class DataStream(BaseStream):
             Defaults to 30000.
     """
 
-    def __init__(self, messages, stream_period=100, timeout=30000, **kwargs):
+    def __init__(self, messages, stream_period=0, timeout=30000, **kwargs):
         super().__init__(stream_period=stream_period, timeout=timeout, **kwargs)
         self.messages = messages.copy()
         self.iterator = None
