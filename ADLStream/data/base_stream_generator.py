@@ -18,7 +18,7 @@ class BaseStreamGenerator(ABC):
             def __init__(self, stream, class_index=-1, **kwargs):
                 self.class_index = class_index
                 super().__init__(stream, **kwargs)
-            
+
             def preprocess(message):
                 x = message
                 y = x.pop(self.class_index)
@@ -26,7 +26,7 @@ class BaseStreamGenerator(ABC):
     ```
 
     Arguments:
-        stream (inherits ADLStream.data.stream.BaseStream): 
+        stream (inherits ADLStream.data.stream.BaseStream):
             Stream source to be feed to the ADLStream framework.
         preprocessing_steps (list of ADLStream.data.preprocessing.BasePreprocessor):
             List of operations to be perform sequentially over the input data (x).
@@ -77,13 +77,13 @@ class BaseStreamGenerator(ABC):
 
     @abstractmethod
     def preprocess(self, message):
-        """The function that contains the logic to transform a stream message into 
-        model imput and target data `(x ,y)`. 
-        
+        """The function that contains the logic to transform a stream message into
+        model imput and target data `(x ,y)`.
+
         Both output, `x` or `y`, can be `None` what means it should not be added to
-        the context. 
-        
-        The target data `y` can be delayed. Although we are sending `x` and `y` at 
+        the context.
+
+        The target data `y` can be delayed. Although we are sending `x` and `y` at
         the same time, it does not mean that `y` is the corresponding target value
         of `x`. However, input data and target data should be in order: `y_i` is the
         target value of `x_i`. So the first target data sent (`y_0`) corresponds with
@@ -94,7 +94,7 @@ class BaseStreamGenerator(ABC):
 
         Raises:
             NotImplementedError: This is an abstract method which should be implemented.
-        
+
         Returns:
             x (list): instance of model's input data.
             y (list): instance of model's target data.
@@ -109,7 +109,7 @@ class BaseStreamGenerator(ABC):
     def run(self, context):
         """The function that sends data to ADLStream framework
 
-        It gets messages from the stream, preprocesses them and sends to the specific 
+        It gets messages from the stream, preprocesses them and sends to the specific
         ADLStream context.
 
         Args:

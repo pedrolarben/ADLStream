@@ -17,30 +17,30 @@ class KafkaStream(BaseStream):
 
     Arguments:
         topic (str): Optional list of topics to subscribe to.
-        group_id (str, optional): The name of the consumer group to join for dynamic 
-            partition assignment (if enabled), and to use for fetching and committing 
-            offsets. If None, auto-partition assignment (via group coordinator) and 
+        group_id (str, optional): The name of the consumer group to join for dynamic
+            partition assignment (if enabled), and to use for fetching and committing
+            offsets. If None, auto-partition assignment (via group coordinator) and
             offset commits are disabled.
             Defaults to None.
-        bootstrap_servers (str, optional): 'host[:port]' string (or list of 
+        bootstrap_servers (str, optional): 'host[:port]' string (or list of
             'host[:port]' strings) that the consumer should contact to bootstrap initial
             cluster metadata. This does not have to be the full node list. It just needs
-            to have at least one broker that will respond to a Metadata API Request. 
+            to have at least one broker that will respond to a Metadata API Request.
             Default port is 9092.
-            Defaults to `"localhost:9092"`. 
-        auto_offset_reset (str, optional): A policy for resetting offsets on 
-            OffsetOutOfRange errors: "earliest" will move to the oldest available 
+            Defaults to `"localhost:9092"`.
+        auto_offset_reset (str, optional): A policy for resetting offsets on
+            OffsetOutOfRange errors: "earliest" will move to the oldest available
             message, "latest" will move to the most recent. Any other value will raise
             an exception.
-            Defaults to "latest".   
-        value_deserializer (callable): Any callable that takes a raw message value and 
+            Defaults to "latest".
+        value_deserializer (callable): Any callable that takes a raw message value and
             returns a deserialized value.
             Defaults to json ascii decoder.
-        timeout (int): number of milliseconds to block during message iteration before 
+        timeout (int): number of milliseconds to block during message iteration before
             raising StopIteration (i.e., ending the iterator). In order to block forever
             use `float('inf')`.
-            Defaults to 30000. 
-        
+            Defaults to 30000.
+
     """
 
     def __init__(

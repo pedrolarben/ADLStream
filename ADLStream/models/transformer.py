@@ -267,8 +267,8 @@ class TransformerModel(tf.keras.Model):
     """Class that creates and computes the Transformer.
 
     Args:
-      attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
-        attributes of the input is different from the ones of the output. 
+      attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of
+        attributes of the input is different from the ones of the output.
         Defaults to None.
       num_layers (int): Number of decoder layers of the model.
       d_model (int): Dimension of the model.
@@ -340,12 +340,11 @@ class TransformerModel(tf.keras.Model):
 
             tar_inp = tf.concat([tar_inp1, tar_inp0], axis=1)
 
-
         elif X.shape[-1] != y.shape[-1]:
             elements = []
             for at in self.attribute:
-              elements.append(tf.gather(X, [at], axis=-1))
-              
+                elements.append(tf.gather(X, [at], axis=-1))
+
             tar_inp1 = tf.concat(elements, axis=-1)
 
             tar_inp1 = tf.gather(tar_inp1, [tar_inp1.shape[1] - 1], axis=1)
@@ -442,8 +441,8 @@ class TransformerModel(tf.keras.Model):
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
 
         if self.attribute != None:
-          tar_inp = tf.gather(x, [self.attribute], axis=-1)
-          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+            tar_inp = tf.gather(x, [self.attribute], axis=-1)
+            tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -472,8 +471,8 @@ class TransformerModel(tf.keras.Model):
         tar_inp = tf.gather(x, [x.shape[1] - 1], axis=1)
 
         if self.attribute != None:
-          tar_inp = tf.gather(x, [self.attribute], axis=-1)
-          tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+            tar_inp = tf.gather(x, [self.attribute], axis=-1)
+            tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -506,7 +505,7 @@ def Transformer(
     loss,
     optimizer,
     output_shape,
-    attribute= None,
+    attribute=None,
     num_heads=4,
     num_layers=2,
     d_model=16,
@@ -526,8 +525,8 @@ def Transformer(
         optimizer (tf.keras.Optimizer): Optimizer that implements the training algorithm.
           Use "custom" in order to use a customize optimizer for the transformer model.
         output_shape (tuple): Shape of the output data.
-        attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of 
-          attributes of the input is different from the ones of the output. 
+        attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of
+          attributes of the input is different from the ones of the output.
           Defaults to None.
         num_heads (int): Number of heads of the attention layer.
           Defaults to 4.
@@ -550,7 +549,7 @@ def Transformer(
     """
 
     model = TransformerModel(
-        attribute = attribute,
+        attribute=attribute,
         input_size=input_shape[1],
         target_size=output_size,
         target_shape=output_shape,
