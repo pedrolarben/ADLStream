@@ -8,7 +8,7 @@ class BasePreprocessor(ABC):
 
     This is the base class for implementing a preprocessor object.
 
-    Every `Preprocessor` have two main function: 
+    Every `Preprocessor` have two main function:
     `learn_one` and `transform_one`.
 
     Every `Preprocessor` must implement `transform_one` and, if needed, `learn_one` with

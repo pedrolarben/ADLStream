@@ -9,23 +9,26 @@ import numpy as np
 class ADLStreamContext:
     """ADLStream context.
 
-    This object is shared among training, predicting, stream-generator and validator processes. 
-    
-    It is used to send the data from the stream generator to the predicting process, 
+    This object is shared among training, predicting, stream-generator and validator processes.
+
+    It is used to send the data from the stream generator to the predicting process,
     then it is used for training and finally the validator has access to the output predictions.
 
     Argumennts:
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
-        log_file (str, optional): Name of log file. 
-            If None, log will be printed on screen and will not be saved. 
+        log_file (str, optional): Name of log file.
+            If None, log will be printed on screen and will not be saved.
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
-            Defaults to None. 
+            Defaults to None.
     """
 
     def __init__(
-        self, batch_size, num_batches_fed, log_file=None,
+        self,
+        batch_size,
+        num_batches_fed,
+        log_file=None,
     ):
 
         self.batch_size = batch_size
@@ -190,16 +193,16 @@ class ADLStreamManager(BaseManager):
 
 class ADLStream:
     """ADLStream.
-    
+
     This is the main object of the framework.
-    Based on a stream generator and a given deep learning model, it runs the training and 
+    Based on a stream generator and a given deep learning model, it runs the training and
     predicting process in paralell (ideally in two different GPU) to obtain obtain accurate
-    predictions as soon as an instance is received. 
+    predictions as soon as an instance is received.
 
     Parameters:
-        stream_generator (ADLStream.data.BaseStreamGenerator): 
-            It is in charge of generating new instances from the stream. 
-        evaluator (ADLStream.evaluator.BaseEvaluator): 
+        stream_generator (ADLStream.data.BaseStreamGenerator):
+            It is in charge of generating new instances from the stream.
+        evaluator (ADLStream.evaluator.BaseEvaluator):
             It will deal with the validation logic.
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
@@ -217,8 +220,8 @@ class ADLStream:
             Defaults to 0.
         predict_gpu_index (int, optional): GPU index to be used fore predicting.
             Defaults to 1.
-        log_file (str, optional): Name of log file. 
-            If None, log will be printed on screen and will not be saved. 
+        log_file (str, optional): Name of log file.
+            If None, log will be printed on screen and will not be saved.
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
             Defaults to None.
@@ -412,7 +415,10 @@ class ADLStream:
             self.batch_size, self.num_batches_fed, log_file=self.log_file
         )
 
-        process_stream = Process(target=self.stream_generator.run, args=[context],)
+        process_stream = Process(
+            target=self.stream_generator.run,
+            args=[context],
+        )
         process_train = Process(
             target=self.training_process, args=[context, self.train_gpu_index]
         )

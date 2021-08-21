@@ -11,28 +11,28 @@ class BaseEvaluator(ABC):
     This is the base class for implementing a custom evaluator.
 
     Every `Evaluator` must have the properties below and implement `evaluate` with the
-    signature `(new_results, instances) = evaluate()`. The `evaluate` function should 
-    contain the logic to: 
+    signature `(new_results, instances) = evaluate()`. The `evaluate` function should
+    contain the logic to:
         - Get validation metrics from validation data (`self.y_eval`, `self.o_eval`
           and `self.x_eval`).
         - Save metrics in `self.metric_history`.
         - Remove already evaluated data (`y_eval`, `o_eval` and `x_eval`) to keep memory
           free.
         - Return new computed accuracy and count of number of instances evaluated.
-    
+
     Examples:
     ```python
         class MinimalEvaluator(BaseEvaluator):
-            
+
             def __init__(self, metric='kappa', **kwargs):
                 self.metric = metric
                 super().__init__(**kwargs)
-            
+
             def evaluate(self):
                 new_results = []
                 instances = []
                 current_instance = len(self.metric_history)
-                
+
                 while self.y_eval and self.o_eval:
                     # Get metric
                     new_metric = metrics.evaluate(
@@ -40,10 +40,10 @@ class BaseEvaluator(ABC):
                         self.y_eval[0]
                         self.o_eval[0]
                     )
-                    
+
                     # Save metric
                     self.metric_history.append(new_metric)
-                    
+
                     # Remove evaluated data
                     self.y_eval = self.y_eval[1:]
                     self.o_eval = self.o_eval[1:]
@@ -52,7 +52,7 @@ class BaseEvaluator(ABC):
                     # Add number of instances evaluated
                     current_instance += 1
                     instances.append(current_instance)
-                
+
                 retun new_results, instances
     ```
 
@@ -128,17 +128,17 @@ class BaseEvaluator(ABC):
     @abstractmethod
     def evaluate(self):
         """Function that contains the main logic of the evaluator.
-        In a generic scheme, this function should:  
+        In a generic scheme, this function should:
             - Get validation metrics from validation data (`self.y_eval`, `self.o_eval`
               and `self.x_eval`).
             - Save metrics in `self.metric_history`.
-            - Remove already evaluated data (`y_eval`, `o_eval` and `x_eval`) to keep 
+            - Remove already evaluated data (`y_eval`, `o_eval` and `x_eval`) to keep
               memory free.
             - Return new computed metrics and count of number of instances evaluated.
 
         Raises:
             NotImplementedError: This is an abstract method which should be implemented.
-        
+
         Returns:
             new_metrics (list)
             instances(list)
@@ -150,7 +150,11 @@ class BaseEvaluator(ABC):
             with open(self.results_file, "a") as f:
                 for i, value in enumerate(new_results):
                     f.write(
-                        "{},{},{}\n".format(str(datetime.now()), instances[i], value,)
+                        "{},{},{}\n".format(
+                            str(datetime.now()),
+                            instances[i],
+                            value,
+                        )
                     )
 
     def update_plot(self, new_results, instances):

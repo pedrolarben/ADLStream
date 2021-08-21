@@ -9,17 +9,17 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
     problems.
 
     Arguments:
-        stream (inherits ADLStream.data.stream.BaseStream): 
+        stream (inherits ADLStream.data.stream.BaseStream):
             Stream source to be feed to the ADLStream framework.
         past_history (int): The width (number of time steps) of the input window (`x`).
-        forecasting_horizon (int): 
+        forecasting_horizon (int):
             The width (number of time steps) of the label window (`y`).
         shift (int >=1, optional): The time offset between input and label windows.
             Defaults to 1.
         input_idx (int or list, optional): The index/indices of the input feature/s.
             If None, every feature is considered as input feature. Defaults to None.
         target_idx (int or list, optional): The index/indices of the target feature/s.
-            If None, every feature is considered as target feature. Defaults to None.  
+            If None, every feature is considered as target feature. Defaults to None.
     """
 
     def __init__(

@@ -8,11 +8,11 @@ class DataStream(BaseStream):
 
     This class implements a stream given a list of messages.
 
-    
-    Arguments:    
+
+    Arguments:
         messages (iterable): List with the stream messages.
-        stream_period (int >=0, optional): Stream time period in milliseconds. 
-            It is the minimun time between consecutive messages in the stream. If it 
+        stream_period (int >=0, optional): Stream time period in milliseconds.
+            It is the minimun time between consecutive messages in the stream. If it
             is 0, when a message is required (`next`), it is sent as soon as possible.
             Defaults to 0.
         timeout (int >0, optional): Stream time out in milliseconds.
