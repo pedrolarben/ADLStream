@@ -6,7 +6,7 @@ class FileStream(BaseStream, ABC):
     """Abstract File Stream.
 
     This class implements the logic to read lines from a file.
-    
+
     Every class inheriting `FileStream` must have the properties below and implement
     `decode` function with the signature `message = decode(line)`, where `line` is a
     string read from the file and `message` must be of type list.
@@ -17,7 +17,7 @@ class FileStream(BaseStream, ABC):
 
             def __init__(self, filename, stream_period=0, timeout=30000, **kwargs):
                 super().__init__(filename, stream_period, timeout, **kwargs)
-            
+
             def decode(self, line):
                 return line.split(",")
     ```
@@ -26,8 +26,8 @@ class FileStream(BaseStream, ABC):
         filename (str): Path of file to read.
         skip_first (int >=0, optional): Number of lines to skip at the begining.
             Defaults to 0.
-        stream_period (int >=0, optional): Stream time period in milliseconds. 
-            It is the minimun time between consecutive messages in the stream. If it 
+        stream_period (int >=0, optional): Stream time period in milliseconds.
+            It is the minimun time between consecutive messages in the stream. If it
             is 0, when a message is required (`next`), it is sent as soon as possible.
             Defaults to 100.
         timeout (int >0, optional): Stream time out in milliseconds.
@@ -58,7 +58,7 @@ class FileStream(BaseStream, ABC):
         """Transform file line into a message
 
         Args:
-            line (str): Line read from the file. 
+            line (str): Line read from the file.
 
         Returns:
             list: represents the data decoded from the file line.

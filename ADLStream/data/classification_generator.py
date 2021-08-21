@@ -9,12 +9,12 @@ class ClassificationStreamGenerator(BaseStreamGenerator):
     This class is used for generating streams for classification problems.
 
     Arguments:
-        stream (inherits ADLStream.data.stream.BaseStream): 
+        stream (inherits ADLStream.data.stream.BaseStream):
             Stream source to be feed to the ADLStream framework.
-        label_index (int or list, optional): The column index/indices of the target 
+        label_index (int or list, optional): The column index/indices of the target
             label.
             Defaults to -1.
-        one_hot_labels (list or None, optional): Possible label values if one-hot 
+        one_hot_labels (list or None, optional): Possible label values if one-hot
             encoding must be done. If None, the target value is not one-hot encoded.
             Defaults to None.
     """

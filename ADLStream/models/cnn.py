@@ -24,17 +24,17 @@ def CNN(
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
         optimizer (tf.keras.Optimizer): Optimizer that implements theraining algorithm.
-        conv_layers (list, optional): 
-            Number of convolutional filters for each convolutional layer. 
+        conv_layers (list, optional):
+            Number of convolutional filters for each convolutional layer.
             Defaults to [64, 128].
-        kernel_sizes (list, optional): 
-            Kernel size for each convolutional layer. 
+        kernel_sizes (list, optional):
+            Kernel size for each convolutional layer.
             Defaults to [7, 5].
-        pool_sizes (list, optional): 
-            Pooling factor to be performed after each convolutional layer. 
+        pool_sizes (list, optional):
+            Pooling factor to be performed after each convolutional layer.
             Defaults to [2, 2].
-        dense_layers (list, optional): List with the number of hidden neurons for each 
-            layer of the dense block before the output. 
+        dense_layers (list, optional): List with the number of hidden neurons for each
+            layer of the dense block before the output.
             Defaults to [].
         dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.

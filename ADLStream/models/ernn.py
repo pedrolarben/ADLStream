@@ -22,14 +22,14 @@ def ERNN(
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
         optimizer (tf.keras.Optimizer): Optimizer that implements theraining algorithm.
-        recurrent_units (list, optional): Number of recurrent units for each ERNN layer. 
+        recurrent_units (list, optional): Number of recurrent units for each ERNN layer.
             Defaults to [64].
         recurrent_dropout (int between 0 and 1, optional): Fraction of the input units to drop.
             Defaults to 0.
-        return_sequences (bool, optional): Whether to return the last output in the output sequence, or the full sequence. 
+        return_sequences (bool, optional): Whether to return the last output in the output sequence, or the full sequence.
             Defaults to False.
-        dense_layers (list, optional): List with the number of hidden neurons for each 
-            layer of the dense block before the output. 
+        dense_layers (list, optional): List with the number of hidden neurons for each
+            layer of the dense block before the output.
             Defaults to [].
         dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.

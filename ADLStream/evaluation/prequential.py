@@ -7,22 +7,22 @@ class PrequentialEvaluator(InterleavedChunkEvaluator):
     """Prequential Evaluator.
 
     This evaluator implements the idea that more recent examples are more important. It
-    uses a decaying factor. It is based on the inteleaved chunks evaluator, which 
+    uses a decaying factor. It is based on the inteleaved chunks evaluator, which
     incrementally updates the accuracy by evaluating chunks of data sequentially.
 
     The fading factor is implemented as follow:
-    
+
         ```
         S = loss + fading_factor * S_prev
         N = 1 + fading_factor * N_prev
         preq_loss = S/N
-        ``` 
+        ```
 
     Arguments:
         chunck_size (int): Number of instances per chunk.
-            the particular case of chunk_size = 1, represents prequential the 
+            the particular case of chunk_size = 1, represents prequential the
             interleaved train-then-test approach.
-        metric (str): loss function. 
+        metric (str): loss function.
             Possible options can be found in ADLStream.evaluation.metrics.
         fadding_factor (float, optional): Fadding factor.
             Defaults to 0.98.
@@ -35,7 +35,7 @@ class PrequentialEvaluator(InterleavedChunkEvaluator):
             Defaults to True.
         plot_file (str, optional): Name of the plot image file.
             If None, no image is saved.
-            Defaults to None.        
+            Defaults to None.
     """
 
     def __init__(
