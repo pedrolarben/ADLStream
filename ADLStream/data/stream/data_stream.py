@@ -9,7 +9,7 @@ class DataStream(BaseStream):
     This class implements a stream given a list of messages.
 
     
-    Arguments:    
+    Arguments:
         messages (iterable): List with the stream messages.
         stream_period (int >=0, optional): Stream time period in milliseconds. 
             It is the minimun time between consecutive messages in the stream. If it 
@@ -21,7 +21,7 @@ class DataStream(BaseStream):
             Defaults to 30000.
     """
 
-    def __init__(self, messages, stream_period=100, timeout=30000, **kwargs):
+    def __init__(self, messages, stream_period=0, timeout=30000, **kwargs):
         super().__init__(stream_period=stream_period, timeout=timeout, **kwargs)
         self.messages = messages.copy()
         self.iterator = None

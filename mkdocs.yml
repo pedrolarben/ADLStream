@@ -26,6 +26,7 @@ nav:
     - Data:
       - Stream: 
         - BaseStream: API/data/stream/BaseStream.md
+        - DataStream: API/data/stream/DataStream.md
         - FileStream: API/data/stream/FileStream.md
         - CSVFileStream: API/data/stream/CSVFileStream.md
         - KafkaStream: API/data/stream/KafkaStream.md
