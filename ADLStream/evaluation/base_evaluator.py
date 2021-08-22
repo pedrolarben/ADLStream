@@ -102,6 +102,9 @@ class BaseEvaluator(ABC):
             with open(self.results_file, "w") as f:
                 f.write("timestamp,instances,metric\n")
 
+    def start(self):
+        self.visualizer.start()
+
     @abstractmethod
     def evaluate(self):
         """Function that contains the main logic of the evaluator.
@@ -158,6 +161,7 @@ class BaseEvaluator(ABC):
         Args:
             context (ADLStreamContext)
         """
+        self.start()
         while not context.is_finished():
             self.update_predictions(context)
             new_results, instances = self.evaluate()
