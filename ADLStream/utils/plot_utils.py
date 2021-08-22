@@ -26,6 +26,7 @@ class EvaluationVisualizer:
 
         self._last_draw = time.time()
 
+    def start(self):
         self._initialize_plot()
 
     def _initialize_plot(self):
