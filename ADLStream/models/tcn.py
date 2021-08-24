@@ -33,35 +33,35 @@ def TCN(
         optimizer (tf.keras.Optimizer): Optimizer that implements theraining algorithm.
         nb_filters (int, optional): Number of convolutional filtersto use in the TCN blocks.
             Defaults to 64.
-        kernel_size (int, optional): The size of the convolutional kernel. 
+        kernel_size (int, optional): The size of the convolutional kernel.
             Defaults to 2.
-        nb_stacks (int, optional): The number of stacks of residual blocks to use. 
+        nb_stacks (int, optional): The number of stacks of residual blocks to use.
             Defaults to 1.
-        dilations (list, optional): The list of the dilations. 
+        dilations (list, optional): The list of the dilations.
             Defaults to [1, 2, 4, 8, 16].
-        tcn_dropout (float between 0 and 1, optional): Fraction of the input units to drop. 
+        tcn_dropout (float between 0 and 1, optional): Fraction of the input units to drop.
             Defaults to 0.0.
-        return_sequences (bool, optional): 
-            Whether to return the last output in the output sequence, or the full sequence. 
+        return_sequences (bool, optional):
+            Whether to return the last output in the output sequence, or the full sequence.
             Defaults to True.
-        activation (tf activation function, optional): 
-            The activation used in the residual blocks o = Activation(x + F(x)). 
+        activation (tf activation function, optional):
+            The activation used in the residual blocks o = Activation(x + F(x)).
             Defaults to "linear".
         out_activation (tf activation function, optional): Activation of the output layer.
             Defaults to "linear".
-        padding (str, optional): The padding to use in the convolutional layers, 
-            can be 'causal' or 'same'. 
+        padding (str, optional): The padding to use in the convolutional layers,
+            can be 'causal' or 'same'.
             Defaults to "causal".
-        use_skip_connections (bool, optional): 
-            If we want to add skip connections from input to each residual block. 
+        use_skip_connections (bool, optional):
+            If we want to add skip connections from input to each residual block.
             Defaults to True.
-        use_batch_norm (bool, optional): 
-            Whether to use batch normalization in the residual layers or not. 
+        use_batch_norm (bool, optional):
+            Whether to use batch normalization in the residual layers or not.
             Defaults to False.
-        dense_layers (list, optional): List with the number of hidden neurons for each 
-            layer of the dense block before the output. 
+        dense_layers (list, optional): List with the number of hidden neurons for each
+            layer of the dense block before the output.
             Defaults to [].
-        dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop. 
+        dense_dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.
         dense_activation (tf activation function, optional): Activation function of the dense
             layers after the convolutional block.

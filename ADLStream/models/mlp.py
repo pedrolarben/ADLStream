@@ -19,7 +19,7 @@ def MLP(
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
         optimizer (tf.keras.Optimizer): Optimizer that implements theraining algorithm.
-        hidden_layers (list, optional): List of neurons of the hidden layers. 
+        hidden_layers (list, optional): List of neurons of the hidden layers.
             Defaults to [32, 16, 8].
         dropout (float between 0 and 1, optional): Fraction of the dense units to drop.
             Defaults to 0.0.

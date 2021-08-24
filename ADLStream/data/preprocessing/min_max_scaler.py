@@ -5,18 +5,18 @@ from ADLStream.data.preprocessing import BasePreprocessor
 class MinMaxScaler(BasePreprocessor):
     """Transform features by scaling each feature between zero and one.
 
-    This estimator scales and translates each feature (column) individually 
+    This estimator scales and translates each feature (column) individually
     such that it is in the the range (0, 1).
 
-    The transformation is given by 
+    The transformation is given by
         x_scaled = (x - min_x) / (max_x - min_x)
 
-    where min_x is the minimun value seen until now for the feature x and 
+    where min_x is the minimun value seen until now for the feature x and
     max_x represents the maximun value seen until now for the feauter x.
 
     Arguments:
         share_params (bool): Whether to share scaler parameters among columns.
-            Defaults to False.  
+            Defaults to False.
 
     """
 
