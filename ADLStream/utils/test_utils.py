@@ -5,7 +5,7 @@ from ADLStream.data import BaseStreamGenerator
 
 
 class FakeContext:
-    """ Fake ADLStream context for testing purposes."""
+    """Fake ADLStream context for testing purposes."""
 
     def __init__(self):
         self.X = []
@@ -23,7 +23,7 @@ class FakeContext:
 
 
 class SimpleTestGenerator(BaseStreamGenerator):
-    """ Simple ADLStream generator for testing purposes."""
+    """Simple ADLStream generator for testing purposes."""
 
     def preprocess(self, message):
         x = message
