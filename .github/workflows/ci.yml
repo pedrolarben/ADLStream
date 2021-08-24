@@ -27,10 +27,9 @@ jobs:
     - name: Lint with Black
       run: |
         black . --check
-    - name: Test with pytest (TODO)
+    - name: Run unittests
       run: |
-        #pytest
-        echo ToDo: Create tests.
+        python -m pytest
     - name: Build mkdocs
       run: |
         python -m pip install -r docs/readthedocs.requirements.txt

@@ -70,7 +70,9 @@ class MinMaxScaler(BasePreprocessor):
         Returns:
             scaled_x (list): minmax scaled data.
         """
-        assert self.data_min is not None
+        assert (
+            self.data_min is not None
+        ), "Parameters not initialized - learn_one before must be called before transform_one."
         scaled_x = [
             self._min_max(v, m, M) for v, m, M in zip(x, self.data_min, self.data_max)
         ]
