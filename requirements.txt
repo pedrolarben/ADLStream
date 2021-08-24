@@ -6,3 +6,4 @@ matplotlib
 scikit-learn
 kafka-python
 matplotlib
+ipython
