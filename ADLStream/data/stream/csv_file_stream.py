@@ -4,7 +4,7 @@ from ADLStream.data.stream import FileStream
 class CSVFileStream(FileStream):
     """CSV File Stream.
 
-    This class creates a stream from a csv file. 
+    This class creates a stream from a csv file.
 
     Arguments:
         filename (str): Path of file to read.
@@ -14,8 +14,8 @@ class CSVFileStream(FileStream):
             Defaults to 0.
         header (int >=0, optional): Number of rows to use as column names.
             Defaults to 0.
-        stream_period (int >=0, optional): Stream time period in milliseconds. 
-            It is the minimun time between consecutive messages in the stream. If it 
+        stream_period (int >=0, optional): Stream time period in milliseconds.
+            It is the minimun time between consecutive messages in the stream. If it
             is 0, when a message is required (`next`), it is sent as soon as possible.
             Defaults to 100.
         timeout (int >0, optional): Stream time out in milliseconds.
