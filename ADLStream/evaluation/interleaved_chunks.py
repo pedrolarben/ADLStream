@@ -45,7 +45,7 @@ class InterleavedChunkEvaluator(BaseEvaluator):
             dataset_name=dataset_name,
             show_plot=show_plot,
             plot_file=plot_file,
-            ylabel=self.metric,
+            xlabel=self.metric,
             **kwargs
         )
 
