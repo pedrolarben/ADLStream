@@ -5,30 +5,30 @@ from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
 import numpy as np
 
+import tensorflow as tf
+from ADLStream.models import create_model
+
 
 class ADLStreamContext:
     """ADLStream context.
 
-    This object is shared among training, predicting, stream-generator and validator processes.
-
-    It is used to send the data from the stream generator to the predicting process,
+    This object is shared among training, predicting, stream-generator and validator processes. 
+    
+    It is used to send the data from the stream generator to the predicting process, 
     then it is used for training and finally the validator has access to the output predictions.
 
     Argumennts:
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
-        log_file (str, optional): Name of log file.
-            If None, log will be printed on screen and will not be saved.
+        log_file (str, optional): Name of log file. 
+            If None, log will be printed on screen and will not be saved. 
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
-            Defaults to None.
+            Defaults to None. 
     """
 
     def __init__(
-        self,
-        batch_size,
-        num_batches_fed,
-        log_file=None,
+        self, batch_size, num_batches_fed, log_file=None,
     ):
 
         self.batch_size = batch_size
@@ -44,6 +44,7 @@ class ADLStreamContext:
         self.y_train = []
         self.x_test = []
         self.y_test = []
+        self.X_shape = None
 
         self.y_eval = []
         self.o_eval = []
@@ -116,6 +117,10 @@ class ADLStreamContext:
     def get_weights(self):
         return self.weights
 
+    def get_shape(self):
+        X = self.x_train
+        return np.asarray(X).shape
+
     def add(self, x, y=None):
         with self.data_lock:
             if x is not None:
@@ -164,6 +169,10 @@ class ADLStreamContext:
             elif len(y) < self.batch_size:
                 return [], []
 
+            if self.X_shape is None:
+                X_shape = np.asarray(X)
+                self.X_shape = X_shape
+            
         return X[: len(self.y_train)], y
 
     def get_predictions(self):
@@ -193,16 +202,16 @@ class ADLStreamManager(BaseManager):
 
 class ADLStream:
     """ADLStream.
-
+    
     This is the main object of the framework.
-    Based on a stream generator and a given deep learning model, it runs the training and
+    Based on a stream generator and a given deep learning model, it runs the training and 
     predicting process in paralell (ideally in two different GPU) to obtain obtain accurate
-    predictions as soon as an instance is received.
+    predictions as soon as an instance is received. 
 
     Parameters:
-        stream_generator (ADLStream.data.BaseStreamGenerator):
-            It is in charge of generating new instances from the stream.
-        evaluator (ADLStream.evaluator.BaseEvaluator):
+        stream_generator (ADLStream.data.BaseStreamGenerator): 
+            It is in charge of generating new instances from the stream. 
+        evaluator (ADLStream.evaluator.BaseEvaluator): 
             It will deal with the validation logic.
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
@@ -220,8 +229,8 @@ class ADLStream:
             Defaults to 0.
         predict_gpu_index (int, optional): GPU index to be used fore predicting.
             Defaults to 1.
-        log_file (str, optional): Name of log file.
-            If None, log will be printed on screen and will not be saved.
+        log_file (str, optional): Name of log file. 
+            If None, log will be printed on screen and will not be saved. 
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
             Defaults to None.
@@ -253,6 +262,9 @@ class ADLStream:
         self.train_gpu_index = train_gpu_index
         self.predict_gpu_index = predict_gpu_index
         self.log_file = log_file
+        self.X_shape = None
+        self.output_size = None
+        self.weights = None
 
         self.manager = ADLStreamManager()
 
@@ -321,8 +333,9 @@ class ADLStream:
 
             context.set_weights(model.get_weights())
             context.set_new_model_available(True)
-
+            
         context.log("INFO", "TRAINING-PROCESS - Finished stream")
+
 
     def predicting_process(self, context, gpu_index):
         """Predicting process.
@@ -415,10 +428,7 @@ class ADLStream:
             self.batch_size, self.num_batches_fed, log_file=self.log_file
         )
 
-        process_stream = Process(
-            target=self.stream_generator.run,
-            args=[context],
-        )
+        process_stream = Process(target=self.stream_generator.run, args=[context],)
         process_train = Process(
             target=self.training_process, args=[context, self.train_gpu_index]
         )
@@ -437,4 +447,21 @@ class ADLStream:
         process_predict.join()
         process_evaluator.join()
 
+        self.X_shape = context.get_shape()
+        self.output_size = context.get_output_size()
+        self.weights = context.get_weights()
+
         self.manager.shutdown()
+
+    def get_model(self):
+        model = create_model(
+                self.model_architecture,
+                self.X_shape,
+                self.output_size,
+                self.model_loss,
+                self.model_optimizer,
+                **self.model_parameters
+            )
+        model.set_weights(self.weights)
+        return model
+
