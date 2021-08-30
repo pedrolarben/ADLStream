@@ -76,6 +76,7 @@ class BaseEvaluator(ABC):
     def __init__(
         self,
         results_file="ADLStream.csv",
+        predictions_file="predicitions.csv",
         dataset_name=None,
         show_plot=True,
         plot_file=None,
@@ -83,6 +84,7 @@ class BaseEvaluator(ABC):
     ):
         self.results_file = results_file
         self.dataset_name = dataset_name
+        self.predictions_file = predictions_file
         self.show_plot = show_plot
         self.plot_file = plot_file
         self.ylabel = ylabel
@@ -137,6 +139,14 @@ class BaseEvaluator(ABC):
                         )
                     )
 
+    def write_predictions(self):
+        if self.predictions_file is not None:
+            with open(self.predictions_file, "a") as f:
+                for i, prediction in enumerate(self.o_eval):
+                    for instance in prediction:
+                        f.write("{},".format(instance))
+                    f.write("\n")
+
     def update_plot(self, new_results, instances):
         if self.show_plot or self.plot_file is not None:
             self.visualizer.append_data(instances, new_results)
@@ -167,6 +177,7 @@ class BaseEvaluator(ABC):
             new_results, instances = self.evaluate()
             if new_results:
                 self.write_results(new_results, instances)
+                self.write_predictions()
                 self.update_plot(new_results, instances)
 
         if self.plot_file:
