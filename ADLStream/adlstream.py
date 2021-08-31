@@ -455,12 +455,12 @@ class ADLStream:
 
     def get_model(self):
         model = create_model(
-                self.model_architecture,
-                self.X_shape,
-                self.output_size,
-                self.model_loss,
-                self.model_optimizer,
-                **self.model_parameters
-            )
+            self.model_architecture,
+            self.X_shape,
+            self.output_size,
+            self.model_loss,
+            self.model_optimizer,
+            **self.model_parameters
+        )
         model.set_weights(self.weights)
         return model
