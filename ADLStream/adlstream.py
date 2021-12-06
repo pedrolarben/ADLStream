@@ -5,7 +5,6 @@ from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
 import numpy as np
 
-import tensorflow as tf
 from ADLStream.models import create_model
 
 
@@ -260,7 +259,7 @@ class ADLStream:
         self.train_gpu_index = train_gpu_index
         self.predict_gpu_index = predict_gpu_index
         self.log_file = log_file
-        self.X_shape = None
+        self.x_shape = None
         self.output_size = None
         self.weights = None
 
@@ -447,7 +446,7 @@ class ADLStream:
         process_predict.join()
         process_evaluator.join()
 
-        self.X_shape = context.get_shape()
+        self.x_shape = context.get_shape()
         self.output_size = context.get_output_size()
         self.weights = context.get_weights()
 
@@ -456,7 +455,7 @@ class ADLStream:
     def get_model(self):
         model = create_model(
             self.model_architecture,
-            self.X_shape,
+            self.x_shape,
             self.output_size,
             self.model_loss,
             self.model_optimizer,
