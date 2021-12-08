@@ -1,4 +1,4 @@
-"""Implements a mean normalization scaler"""
+"""Implements a standardization scaler"""
 from ADLStream.data.preprocessing import BasePreprocessor
 import math
 
@@ -8,7 +8,7 @@ class StandardizationScaler(BasePreprocessor):
         x_scaled = (x - avg_x) / x_stdev
 
     where avg_x is the mean seen until now for the feature x and x_stdev
-    is the standard deviation seen until now for teh feature x.
+    is the standard deviation seen until now for the feature x.
 
     Arguments:
         share_params (bool): Whether to share scaler parameters among columns.
@@ -27,69 +27,63 @@ class StandardizationScaler(BasePreprocessor):
 
     def _mean(self, a):
 
-        if self.share_params == False and self.data_count != 1:
+        if self.share_params == False:
             assert len(a) == len(self.data_sum)
             self.data_sum = [self.data_sum[i] + a[i] for i in range(len(a))]
             mean = [(self.data_sum[i]) / self.data_count for i in range(len(a))]
 
-        elif self.share_params == False and self.data_count == 1:
-            assert len(a) == len(self.data_sum)
-            mean = [(self.data_sum[i]) / self.data_count for i in range(len(a))]
-
-        elif self.share_params == True and self.data_count != 1:
+        else:
             self.data_sum += sum(a)
             mean = [self.data_sum / (self.data_count * len(a))] * len(a)
 
-        elif self.share_params == True and self.data_count == 1:
-            mean = [self.data_sum / (self.data_count * len(a))] * len(a)
         return mean
 
     def _standard_deviation(self, a):
         if self.share_params == False:
             assert len(a) == len(self.data_sum)
+
         mean = self.data_avg
-        if self.share_params == False and self.data_count != 1:
-            self.data.append(a)
-            self.data_stdev_sum = [
-                sum([(self.data[i][j] - mean[j]) ** 2 for i in range(len(self.data))])
-                for j in range(len(mean))
-            ]
-            stdev = [
-                math.sqrt(1 / self.data_count * (self.data_stdev_sum[i]))
-                for i in range(len(self.data_stdev_sum))
+        if self.share_params == False:
+            delta = [
+                (a[i] - mean[i])  for i in range(len(a))
             ]
 
-        elif self.share_params == False and self.data_count == 1:
-            self.data_stdev_sum = [(a[i] - mean[i]) ** 2 for i in range(len(a))]
-            stdev = [
-                math.sqrt(1 / self.data_count * (self.data_stdev_sum[i]))
-                for i in range(len(self.data_stdev_sum))
+            data_sum = [self.data_sum[i] + a[i] for i in range(len(a))]
+            mean = [(data_sum[i]) / self.data_count for i in range(len(a))]
+
+            delta2 = [
+                (a[i] - mean[i])  for i in range(len(a))
             ]
 
-        elif self.share_params == True and self.data_count != 1:
-            self.data.append(a)
             self.data_stdev_sum = [
-                sum(
-                    [
-                        (self.data[i][j] - mean[j]) ** 2
-                        for i in range(len(self.data))
-                        for j in range(len(mean))
-                    ]
-                )
+                (self.data_stdev_sum[i] + (delta[i]*delta2[i]))  for i in range(len(a))
+            ]
+            
+            if self.data_count == 1:
+                stdev = [math.sqrt(self.data_stdev_sum[i]) for i in range(len(a))]
+            else:
+                stdev = [
+                    math.sqrt(self.data_stdev_sum[i] / (self.data_count - 1))
+                    for i in range(len(a))
+                ]
+
+            
+        else:
+            delta = [(a[i] - mean[i]) for i in range(len(a))]
+
+            data_sum = self.data_sum
+            data_sum += sum(a)
+            mean = [data_sum / (self.data_count * len(a))] * len(a)
+
+            delta2 = [(a[i] - mean[i]) for i in range(len(a))]
+
+            for i in range(len(a)):
+                self.data_stdev_sum += delta[i] * delta2[i]
+
+            stdev = [
+                math.sqrt(self.data_stdev_sum / (((self.data_count) * len(a)) - 1))
             ] * len(a)
-            stdev = [
-                math.sqrt(1 / (self.data_count * len(a)) * (self.data_stdev_sum[i]))
-                for i in range(len(self.data_stdev_sum))
-            ]
 
-        elif self.share_params == True and self.data_count == 1:
-            self.data_stdev_sum = [
-                sum([(a[i] - mean[i]) ** 2 for i in range(len(a))])
-            ] * len(a)
-            stdev = [
-                math.sqrt(1 / (self.data_count * len(a)) * (self.data_stdev_sum[i]))
-                for i in range(len(self.data_stdev_sum))
-            ]
         return stdev
 
     def learn_one(self, x):
@@ -105,12 +99,15 @@ class StandardizationScaler(BasePreprocessor):
             self.data = [x]
             self.data_avg = x
             self.data_mean = x
-            self.data_sum = x
-            self.data_stdev_sum = x
+            self.data_sum = [0.] * len(x)
+            self.data_stdev_sum = [0.] * len(x)
             if self.share_params == True:
-                self.data_sum = sum(x)
-        self.data_avg = self._mean(x)
+                self.data_sum = 0.
+                self.data_stdev_sum = 0.0
+                self.data_avg = [self.data_sum + sum(x) / (self.data_count * len(x))] * len(x)
+                
         self.data_stdev = self._standard_deviation(x)
+        self.data_avg = self._mean(x)
 
         self.data_count += 1
         return self

@@ -39,20 +39,13 @@ class MeanNormalizationScaler(BasePreprocessor):
         return max_values
 
     def _mean(self, a):
-        if self.share_params == False and self.data_count != 1:
+        if self.share_params == False:
             assert len(a) == len(self.data_sum)
             self.data_sum = [self.data_sum[i] + a[i] for i in range(len(a))]
             mean = [(self.data_sum[i]) / self.data_count for i in range(len(a))]
 
-        elif self.share_params == False and self.data_count == 1:
-            assert len(a) == len(self.data_sum)
-            mean = [(self.data_sum[i]) / self.data_count for i in range(len(a))]
-
-        elif self.share_params == True and self.data_count != 1:
+        else:
             self.data_sum += sum(a)
-            mean = [self.data_sum / (self.data_count * len(a))] * len(a)
-
-        elif self.share_params == True and self.data_count == 1:
             mean = [self.data_sum / (self.data_count * len(a))] * len(a)
 
         return mean
@@ -70,9 +63,9 @@ class MeanNormalizationScaler(BasePreprocessor):
             self.data_min = x
             self.data_max = x
             self.data_avg = x
-            self.data_sum = x
+            self.data_sum = [0.] * len(x)
             if self.share_params == True:
-                self.data_sum = sum(x)
+                self.data_sum = 0.
         self.data_min = self._minimum(x, self.data_min)
         self.data_max = self._maximum(x, self.data_max)
         self.data_avg = self._mean(x)
