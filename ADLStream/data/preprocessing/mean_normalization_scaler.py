@@ -63,9 +63,9 @@ class MeanNormalizationScaler(BasePreprocessor):
             self.data_min = x
             self.data_max = x
             self.data_avg = x
-            self.data_sum = [0.] * len(x)
+            self.data_sum = [0.0] * len(x)
             if self.share_params == True:
-                self.data_sum = 0.
+                self.data_sum = 0.0
         self.data_min = self._minimum(x, self.data_min)
         self.data_max = self._maximum(x, self.data_max)
         self.data_avg = self._mean(x)

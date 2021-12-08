@@ -44,21 +44,17 @@ class StandardizationScaler(BasePreprocessor):
 
         mean = self.data_avg
         if self.share_params == False:
-            delta = [
-                (a[i] - mean[i])  for i in range(len(a))
-            ]
+            delta = [(a[i] - mean[i]) for i in range(len(a))]
 
             data_sum = [self.data_sum[i] + a[i] for i in range(len(a))]
             mean = [(data_sum[i]) / self.data_count for i in range(len(a))]
 
-            delta2 = [
-                (a[i] - mean[i])  for i in range(len(a))
-            ]
+            delta2 = [(a[i] - mean[i]) for i in range(len(a))]
 
             self.data_stdev_sum = [
-                (self.data_stdev_sum[i] + (delta[i]*delta2[i]))  for i in range(len(a))
+                (self.data_stdev_sum[i] + (delta[i] * delta2[i])) for i in range(len(a))
             ]
-            
+
             if self.data_count == 1:
                 stdev = [math.sqrt(self.data_stdev_sum[i]) for i in range(len(a))]
             else:
@@ -67,7 +63,6 @@ class StandardizationScaler(BasePreprocessor):
                     for i in range(len(a))
                 ]
 
-            
         else:
             delta = [(a[i] - mean[i]) for i in range(len(a))]
 
@@ -99,13 +94,15 @@ class StandardizationScaler(BasePreprocessor):
             self.data = [x]
             self.data_avg = x
             self.data_mean = x
-            self.data_sum = [0.] * len(x)
-            self.data_stdev_sum = [0.] * len(x)
+            self.data_sum = [0.0] * len(x)
+            self.data_stdev_sum = [0.0] * len(x)
             if self.share_params == True:
-                self.data_sum = 0.
+                self.data_sum = 0.0
                 self.data_stdev_sum = 0.0
-                self.data_avg = [self.data_sum + sum(x) / (self.data_count * len(x))] * len(x)
-                
+                self.data_avg = [
+                    self.data_sum + sum(x) / (self.data_count * len(x))
+                ] * len(x)
+
         self.data_stdev = self._standard_deviation(x)
         self.data_avg = self._mean(x)
 

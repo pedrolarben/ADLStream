@@ -35,6 +35,8 @@ nav:
       - Preprocessing: 
         - BasePreprocessor: API/data/preprocessing/BasePreprocessor.md
         - MinMaxScaler: API/data/preprocessing/MinMaxScaler.md
+        - MeanNormalizationScaler: API/data/preprocessing/MeanNormalizationScaler.md
+        - StandardizationScaler: API/data/preprocessing/MeanNormalizationScaler.md
       - BaseStreamGenerator: API/data/BaseStreamGenerator.md
       - ClassificationStreamGenerator: API/data/ClassificationStreamGenerator.md
       - MovingWindowStreamGenerator: API/data/MovingWindowStreamGenerator.md
