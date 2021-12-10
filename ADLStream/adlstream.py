@@ -5,8 +5,6 @@ from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
 import numpy as np
 
-from ADLStream.models import create_model
-
 
 class ADLStreamContext:
     """ADLStream context.
@@ -453,6 +451,8 @@ class ADLStream:
         self.manager.shutdown()
 
     def get_model(self):
+        from ADLStream.models import create_model
+
         model = create_model(
             self.model_architecture,
             self.x_shape,
