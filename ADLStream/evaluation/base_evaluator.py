@@ -75,8 +75,8 @@ class BaseEvaluator(ABC):
 
     def __init__(
         self,
-        results_file="ADLStream.csv",
-        predictions_file="predicitions.csv",
+        results_file=None,
+        predictions_file=None,
         dataset_name=None,
         show_plot=True,
         plot_file=None,
@@ -106,6 +106,14 @@ class BaseEvaluator(ABC):
 
     def start(self):
         self.visualizer.start()
+        if self.predictions_file:
+            self.predictions_file = open(self.predictions_file, "a")
+        if self.results_file:
+            self.results_file = open(self.results_file, "a")
+
+    def end(self):
+        self.predictions_file.close()
+        self.results_file.close()
 
     @abstractmethod
     def evaluate(self):
@@ -129,23 +137,19 @@ class BaseEvaluator(ABC):
 
     def write_results(self, new_results, instances):
         if self.results_file is not None:
-            with open(self.results_file, "a") as f:
-                for i, value in enumerate(new_results):
-                    f.write(
-                        "{},{},{}\n".format(
-                            str(datetime.now()),
-                            instances[i],
-                            value,
-                        )
+            for i, value in enumerate(new_results):
+                self.results_file.write(
+                    "{},{},{}\n".format(
+                        str(datetime.now()),
+                        instances[i],
+                        value,
                     )
+                )
 
     def write_predictions(self):
         if self.predictions_file is not None:
-            with open(self.predictions_file, "a") as f:
-                for i, prediction in enumerate(self.o_eval):
-                    for instance in prediction:
-                        f.write("{},".format(instance))
-                    f.write("\n")
+            for _, prediction in enumerate(self.o_eval):
+                self.predictions_file.write(f"{','.join(map(str, prediction))}\n")
 
     def update_plot(self, new_results, instances):
         if self.show_plot or self.plot_file is not None:
@@ -161,6 +165,7 @@ class BaseEvaluator(ABC):
         self.x_eval += x
         self.y_eval += y
         self.o_eval += o
+        self.write_predictions()
 
     def run(self, context):
         """Run evaluator
@@ -184,3 +189,4 @@ class BaseEvaluator(ABC):
             self.visualizer.savefig(self.plot_file)
         if self.show_plot:
             self.visualizer.show()
+        self.end()
