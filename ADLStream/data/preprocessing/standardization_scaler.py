@@ -39,6 +39,18 @@ class StandardizationScaler(BasePreprocessor):
         return mean
 
     def _standard_deviation(self, a):
+        """In order to compute the standard deviation
+           uses the Welford's online algorithm given by
+           data_stdev_sum = old_data_stdev_sum + delta * delta2
+           stdev = sqrt(data_stdev_sum / (n - 1))
+
+        Arguments:
+            a (list): input data from stream generator.
+
+        Returns:
+            stev: standard deviation of the data.
+        """
+
         if self.share_params == False:
             assert len(a) == len(self.data_sum)
 
