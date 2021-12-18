@@ -182,7 +182,6 @@ class BaseEvaluator(ABC):
             new_results, instances = self.evaluate()
             if new_results:
                 self.write_results(new_results, instances)
-                self.write_predictions()
                 self.update_plot(new_results, instances)
 
         if self.plot_file:
