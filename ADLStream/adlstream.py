@@ -247,6 +247,10 @@ class ADLStream:
         self.predict_gpu_index = predict_gpu_index
         self.log_file = log_file
 
+        self.x_shape = None
+        self.output_size = None
+        self.weights = None
+
         self.manager = ADLStreamManager()
 
     def training_process(self, context, gpu_index):
@@ -426,4 +430,23 @@ class ADLStream:
         process_predict.join()
         process_evaluator.join()
 
+
+        self.x_shape = context.get_shape()
+        self.output_size = context.get_output_size()
+        self.weights = context.get_weights()
+
         self.manager.shutdown()
+
+    def get_model(self):
+        from ADLStream.models import create_model
+
+        model = create_model(
+            self.model_architecture,
+            self.x_shape,
+            self.output_size,
+            self.model_loss,
+            self.model_optimizer,
+            **self.model_parameters
+        )
+        model.set_weights(self.weights)
+        return model
