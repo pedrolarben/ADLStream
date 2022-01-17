@@ -146,7 +146,7 @@ class BaseEvaluator(ABC):
                     )
                 )
 
-    def write_predictions(self,preds):
+    def write_predictions(self, preds):
         if self.predictions_file is not None:
             for _, prediction in enumerate(preds):
                 self.predictions_file.write(f"{','.join(map(str, prediction))}\n")
