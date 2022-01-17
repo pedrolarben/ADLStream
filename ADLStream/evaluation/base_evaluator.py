@@ -146,9 +146,9 @@ class BaseEvaluator(ABC):
                     )
                 )
 
-    def write_predictions(self):
+    def write_predictions(self,preds):
         if self.predictions_file is not None:
-            for _, prediction in enumerate(self.o_eval):
+            for _, prediction in enumerate(preds):
                 self.predictions_file.write(f"{','.join(map(str, prediction))}\n")
 
     def update_plot(self, new_results, instances):
@@ -165,7 +165,7 @@ class BaseEvaluator(ABC):
         self.x_eval += x
         self.y_eval += y
         self.o_eval += o
-        self.write_predictions()
+        self.write_predictions(o)
 
     def run(self, context):
         """Run evaluator
