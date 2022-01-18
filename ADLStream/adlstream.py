@@ -430,7 +430,6 @@ class ADLStream:
         process_predict.join()
         process_evaluator.join()
 
-
         self.x_shape = context.get_shape()
         self.output_size = context.get_output_size()
         self.weights = context.get_weights()
