@@ -8,12 +8,9 @@ import numpy as np
 
 class ADLStreamContext:
     """ADLStream context.
-
     This object is shared among training, predicting, stream-generator and validator processes.
-
     It is used to send the data from the stream generator to the predicting process,
     then it is used for training and finally the validator has access to the output predictions.
-
     Argumennts:
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
@@ -116,10 +113,6 @@ class ADLStreamContext:
     def get_weights(self):
         return self.weights
 
-    def get_shape(self):
-        X = self.x_train
-        return np.asarray(X).shape
-
     def add(self, x, y=None):
         with self.data_lock:
             if x is not None:
@@ -185,7 +178,6 @@ class ADLStreamContext:
 
 class ADLStreamManager(BaseManager):
     """ADLStream Manager
-
     Manager server which hold ADLStreamContext object.
     It allows other processes to manipulate the shared context.
     """
@@ -197,12 +189,10 @@ class ADLStreamManager(BaseManager):
 
 class ADLStream:
     """ADLStream.
-
     This is the main object of the framework.
     Based on a stream generator and a given deep learning model, it runs the training and
     predicting process in paralell (ideally in two different GPU) to obtain obtain accurate
     predictions as soon as an instance is received.
-
     Parameters:
         stream_generator (ADLStream.data.BaseStreamGenerator):
             It is in charge of generating new instances from the stream.
@@ -229,7 +219,6 @@ class ADLStream:
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
             Defaults to None.
-
     """
 
     def __init__(
@@ -257,6 +246,7 @@ class ADLStream:
         self.train_gpu_index = train_gpu_index
         self.predict_gpu_index = predict_gpu_index
         self.log_file = log_file
+
         self.x_shape = None
         self.output_size = None
         self.weights = None
@@ -265,7 +255,6 @@ class ADLStream:
 
     def training_process(self, context, gpu_index):
         """Training process.
-
         Args:
             context (ADLStreamContext): Shared object among processes.
             gpu_index (int): Index of the GPU to use for training
@@ -333,7 +322,6 @@ class ADLStream:
 
     def predicting_process(self, context, gpu_index):
         """Predicting process.
-
         Args:
             context (ADLStreamContext): Shared object among processes.
             gpu_index (int): Index of the GPU to use for training
@@ -409,9 +397,7 @@ class ADLStream:
 
     def run(self):
         """Function that run ADLStream.
-
         It run 4 different processes:
-
         - Training process.
         - Predicting process.
         - Stream generator process.
