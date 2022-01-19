@@ -10,9 +10,9 @@ AUTHOR_EMAIL = "plbenitez@us.es"
 URL = "https://adlstream.readthedocs.io"
 PROJECT_URLS = {
     "Download": "https://github.com/pedrolarben/ADLStream/tags",
-    "API Documentation": "https://adlstream.readthedocs.io/API/overview/", 
-    "Paper": "https://doi.org/10.3233/ICA-200617"
-    }
+    "API Documentation": "https://adlstream.readthedocs.io/API/overview/",
+    "Paper": "https://doi.org/10.3233/ICA-200617",
+}
 CLASSIFIERS = [
     "Development Status :: 3 - Alpha",
     "Environment :: GPU :: NVIDIA CUDA :: 11.2",
@@ -31,8 +31,8 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Software Development",
     "Topic :: Software Development :: Libraries",
-    "Topic :: Software Development :: Libraries :: Python Modules"
-    ]
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 LICENSE = "MIT"
 DESCRIPTION = "ADLStream is a novel asynchronous dual-pipeline deep learning framework for data stream mining"
 LONG_DESCRIPTION = (HERE / "README.md").read_text()
