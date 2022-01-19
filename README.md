@@ -38,6 +38,7 @@ Complete documentation and API of ADLStream can be found in [adlstream.readthedo
   - [Contributing](#contributing)
   - [License](#license)
   - [Authors](#authors)
+    - [Contributors](#contributors)
 
 ## Installation Guide
 
@@ -200,6 +201,8 @@ Here it is the original paper that you can cite to reference ADLStream
 
 Any other study using ADLStream framework will be listed here.
 
+* [Lara-Benítez, Pedro, et al. "On the performance of deep learning models for time series classification in streaming." International Workshop on Soft Computing Models in Industrial and Environmental Applications. Springer, Cham, 2020.](http://arxiv.org/abs/2003.02544v2.pdf)
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). We appreciate all kinds of help.
@@ -214,6 +217,11 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * **Manuel Carranza-García** - [LinkedIn](https://www.linkedin.com/in/manuelcarranzagarcia96/)
 * **Jorge García-Gutiérrez** 
 * **José C. Riquelme**
+  
+### Contributors
+* [@pedrolarben](https://github.com/pedrolarben)
+* [@carranza96](https://github.com/carranza96)
+* [@preinaj](https://github.com/preinaj)
 
 
 
