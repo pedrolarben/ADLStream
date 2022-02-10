@@ -4,7 +4,7 @@ import numpy as np
 import logging
 from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
-from typing import Callable, ContextManager, List, Literal, Optional, Tuple, Type, Union
+from typing import Callable, ContextManager, List, Optional, Tuple, Type, Union
 
 
 class ADLStreamContext:
@@ -66,7 +66,7 @@ class ADLStreamContext:
 
     def log(
         self,
-        level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        level: str,
         message: str,
     ) -> None:
         """Log message.
