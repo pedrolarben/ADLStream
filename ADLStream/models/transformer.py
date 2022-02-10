@@ -180,11 +180,12 @@ class DecoderLayer(tf.keras.layers.Layer):
         Returns:
             tf.Tensor: Tensor with shape (batch_size, target_seq_len, d_model)
         """
+        if len(x.shape) == 4:
+            x = tf.squeeze(x, axis=[1])
 
         attn1 = self.mha1(x, x, x, look_ahead_mask)
         attn1 = self.dropout1(attn1, training=training)
         out1 = self.layernorm1(attn1 + x)
-
         attn2 = self.mha2(enc_output, enc_output, out1, None)
         attn2 = self.dropout2(attn2, training=training)
         out2 = self.layernorm2(attn2 + out1)
@@ -473,6 +474,7 @@ class TransformerModel(tf.keras.Model):
         if self.attribute != None:
             tar_inp = tf.gather(x, [self.attribute], axis=-1)
             tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+            tar_inp = tf.squeeze(tar_inp, axis=[1])
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -567,7 +569,6 @@ def Transformer(
         optimizer = tf.keras.optimizers.Adam(
             learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9
         )
-
     att_inp = input_shape[-1]
     att_out = output_shape[-1]
 

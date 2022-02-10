@@ -96,6 +96,7 @@ class BaseEvaluator(ABC):
 
         self._create_results_file()
 
+        self.visualizer = None
         if self.show_plot or self.plot_file is not None:
             self.visualizer = EvaluationVisualizer(self.dataset_name, self.ylabel)
 
@@ -105,7 +106,8 @@ class BaseEvaluator(ABC):
                 f.write("timestamp,instances,metric\n")
 
     def start(self):
-        self.visualizer.start()
+        if self.visualizer is not None:
+            self.visualizer.start()
         if self.predictions_file:
             self.predictions_file = open(self.predictions_file, "a")
         if self.results_file:
