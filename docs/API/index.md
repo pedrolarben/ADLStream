@@ -1,4 +1,4 @@
-#  Documentation
+#  API Documentation
 
 ## All symbols in ADLStream
 * [ADLStream.ADLStream](/API/ADLStream.ADLStream)

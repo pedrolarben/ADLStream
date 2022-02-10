@@ -14,15 +14,34 @@ theme:
   favicon: images/favicon.ico
   logo: images/logo.png
   palette:
-    primary: 'teal'
-    accent: 'deep orange'
+    - scheme: default
+      toggle:
+        icon: material/weather-sunny 
+        name: Switch to dark mode
+      primary: 'teal'
+      accent: 'deep orange'
+    - scheme: slate 
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+      primary: 'blue grey'
+      accent: 'deep orange'
+  font:
+    text: Roboto
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.tabs
 
 nav:
   - Home: index.md
-  - Installation guide: install.md
-  - Getting started: getting_started.md
+  - Getting started: 
+    - Installation: install.md
+    - First example: getting_started.md
   - API: 
-    - Overview : API/overview.md
+    - API/index.md
     - ADLStream: API/ADLStream.ADLStream.md
     - Data:
       - Stream: 
@@ -56,16 +75,34 @@ nav:
       - CNN: API/models/cnn.md
       - TCN: API/models/tcn.md
       - Transformer: API/models/transformer.md
-  - Research: research.md 
-  - Contributing: contributing.md
-  - License: license_page.md
-  - Authors: authors.md
-      
+  - About:
+    - Research: research.md 
+    - Authors: authors.md
+    - Contributing: contributing.md
+    - License: license_page.md
+
+extra:
+  generator: false 
+  version:
+    provider: readthedocs     
 
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          selection:
+            inherited_members: True
+            filters:
+              - "!^_"  # exlude all members starting with _
+              - "^__init__$"  # but always include __init__ modules and methods
+          rendering:
+            show_source: true
+            heading_level: 3
 
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
+  - toc:
+      permalink: true

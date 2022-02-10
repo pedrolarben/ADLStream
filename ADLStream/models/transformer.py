@@ -6,11 +6,11 @@ def positional_encoding(position, d_model):
     """Function that calculates the positional encoding.
 
     Args:
-      position (int): Maximum position encoding (input or output).
-      d_model (int): Dimension of the model.
+        position (int): Maximum position encoding (input or output).
+        d_model (int): Dimension of the model.
 
     Returns:
-      tf.Tensor: Positional encoding as a tensor with shape (1, position, d_model).
+        tf.Tensor: Positional encoding as a tensor with shape (1, position, d_model).
     """
 
     angle_rates = 1 / np.power(
@@ -31,8 +31,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     """Class that creates and computes the multi-head attention layer.
 
     Args:
-      num_heads (int): Number of heads of the multihead attention layer.
-      d_model (int): Dimension of the model.
+        num_heads (int): Number of heads of the multihead attention layer.
+        d_model (int): Dimension of the model.
     """
 
     def __init__(self, d_model, num_heads):
@@ -54,11 +54,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         """Function that computes the scaled dot product: softmax(q*k^t/sqrt(dk))*v.
 
         Args:
-          q (tf.Tensor): Query vector with shape (..., seq_len_q, depth).
-          k (tf.Tensor): Keys vector with shape (..., seq_len_k, depth).
-          v (tf.Tensor): Values vector with shape (..., seq_len_v, depth_v).
-          mask (tf.Tensor): tf.Tensor with shape broadcastable
-            to (..., seq_len_q, seq_len_k).
+            q (tf.Tensor): Query vector with shape (..., seq_len_q, depth).
+            k (tf.Tensor): Keys vector with shape (..., seq_len_k, depth).
+            v (tf.Tensor): Values vector with shape (..., seq_len_v, depth_v).
+            mask (tf.Tensor): tf.Tensor with shape broadcastable
+              to (..., seq_len_q, seq_len_k).
 
         Returns:
             tf.Tensor: Final output tensor with shape (..., seq_len_q, depth_v).
@@ -78,11 +78,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         """Function that splits the last dimension of a tensor and transposes it.
 
         Args:
-          x (tf.Tensor): Input tensor with shape (batch_size,seq_len).
-          batch_size (int): Size of the batches.
+            x (tf.Tensor): Input tensor with shape (batch_size,seq_len).
+            batch_size (int): Size of the batches.
 
         Returns:
-          tf.Tensor: Tensor with shape (batch_size,num_heads,seq_len,depth).
+            tf.Tensor: Tensor with shape (batch_size,num_heads,seq_len,depth).
         """
         if x.shape[1] != 1:
             x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
@@ -93,14 +93,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     def call(self, v, k, q, mask):
         """
         Args:
-          q (tf.Tensor): Query vector with shape (batch_size, seq_len, d_model).
-          k (tf.Tensor): Keys vector with shape (batch_size, seq_len, d_model).
-          v (tf.Tensor): Values vector with shape (batch_size, seq_len, d_model).
-          mask (tf.Tensor): Tensor with shape broadcastable
-            to (..., seq_len_q, seq_len_k).
+            q (tf.Tensor): Query vector with shape (batch_size, seq_len, d_model).
+            k (tf.Tensor): Keys vector with shape (batch_size, seq_len, d_model).
+            v (tf.Tensor): Values vector with shape (batch_size, seq_len, d_model).
+            mask (tf.Tensor): Tensor with shape broadcastable
+                to (..., seq_len_q, seq_len_k).
 
         Returns:
-          tf.Tensor: Tensor with shape (batch_size, seq_len_q, d_model).
+            tf.Tensor: Tensor with shape (batch_size, seq_len_q, d_model).
         """
 
         batch_size = tf.shape(q)[0]
@@ -141,14 +141,14 @@ class DecoderLayer(tf.keras.layers.Layer):
     """Class that creates and computes the decoder layer.
 
     Args:
-      d_model (int): Dimension of the model.
-      num_heads (int): Number of heads of the multihead attention layer.
-      dff (int): Number of neurons uses in the first layer of the
-        point wise feed forward network.
-      activation (tf.keras.Loss.Activation/String): Activation function for the
-        point wise feed forward network. Defaults to relu.
-      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
-        Defaults to 0.1.
+        d_model (int): Dimension of the model.
+        num_heads (int): Number of heads of the multihead attention layer.
+        dff (int): Number of neurons uses in the first layer of the
+            point wise feed forward network.
+        activation (tf.keras.Loss.Activation/String): Activation function for the
+            point wise feed forward network. Defaults to relu.
+        dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
+            Defaults to 0.1.
     """
 
     def __init__(self, d_model, num_heads, dff, activation="relu", dropout_rate=0.1):
@@ -171,11 +171,11 @@ class DecoderLayer(tf.keras.layers.Layer):
     def call(self, x, enc_output, training, look_ahead_mask):
         """
         Args:
-          x (tf.Tensor): Input tf.Tensor
-          enc_output (tf.Tensor): Output tf.Tensor of the encoder (positional encoding).
-          training (bool): True if the network is in training mode, false if not.
-          look_ahead_mask (tf.Tensor): tf.Tensor with shape broadcastable to
-            (..., seq_len_q, seq_len_k) Look at MultiHeadAttention class for more info.
+            x (tf.Tensor): Input tf.Tensor
+            enc_output (tf.Tensor): Output tf.Tensor of the encoder (positional encoding).
+            training (bool): True if the network is in training mode, false if not.
+            look_ahead_mask (tf.Tensor): tf.Tensor with shape broadcastable to
+                (..., seq_len_q, seq_len_k) Look at MultiHeadAttention class for more info.
 
         Returns:
             tf.Tensor: Tensor with shape (batch_size, target_seq_len, d_model)
@@ -202,16 +202,16 @@ class Decoder(tf.keras.layers.Layer):
     """Class that creates and computes the decoder.
 
     Args:
-      num_layers (int): Number of decoder layers of the model.
-      d_model (int): Dimension of the model.
-      num_heads (int): Number of heads of the multihead attention layer.
-      dff (int): Number of neurons uses in the first layer of the
-        point wise feed forward network.
-      maximum_position_encoding (int): Maximum position encoding.
-      activation (tf.keras.Loss.Activation/String): Activation function for the
-        point wise feed forward network. Defaults to relu.
-      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
-        Defaults to 0.1.
+        num_layers (int): Number of decoder layers of the model.
+        d_model (int): Dimension of the model.
+        num_heads (int): Number of heads of the multihead attention layer.
+        dff (int): Number of neurons uses in the first layer of the
+            point wise feed forward network.
+        maximum_position_encoding (int): Maximum position encoding.
+        activation (tf.keras.Loss.Activation/String): Activation function for the
+            point wise feed forward network. Defaults to relu.
+        dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
+            Defaults to 0.1.
     """
 
     def __init__(
@@ -242,11 +242,11 @@ class Decoder(tf.keras.layers.Layer):
     def call(self, x, enc_output, training, look_ahead_mask):
         """
         Args:
-          x (tf.Tensor): Input tf.Tensor.
-          enc_output (tf.Tensor): Output tf.Tensor of the encoder (positional encoding).
-          training (bool): True if the network is in training mode, false if not.
-          look_ahead_mask (tf.Tensor): tf.Tensor with shape broadcastable to
-            (..., seq_len_q, seq_len_k) Look at MultiHeadAttention class for more info.
+            x (tf.Tensor): Input tf.Tensor.
+            enc_output (tf.Tensor): Output tf.Tensor of the encoder (positional encoding).
+            training (bool): True if the network is in training mode, false if not.
+            look_ahead_mask (tf.Tensor): tf.Tensor with shape broadcastable to
+                (..., seq_len_q, seq_len_k) Look at MultiHeadAttention class for more info.
 
         Returns:
             tf.Tensor: Tensor with shape (batch_size, target_seq_len, d_model).
@@ -268,23 +268,23 @@ class TransformerModel(tf.keras.Model):
     """Class that creates and computes the Transformer.
 
     Args:
-      attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of
-        attributes of the input is different from the ones of the output.
-        Defaults to None.
-      num_layers (int): Number of decoder layers of the model.
-      d_model (int): Dimension of the model.
-      num_heads (int): Number of heads of the multihead attention layer.
-      dff (int): Number of neurons uses in the first layer of the
-        point wise feed forward network.
-      input_size (int): Size of the input.
-      target_size (int): Size of the output.
-      target_shape (tuple): Shape of the output.
-      pe_input (int): Maximum position encoding for the input.
-      pe_target (int): Maximum position encoding for the target.
-      activation (tf.keras.Loss.Activation/String): Activation function for the
-        point wise feed forward network. Defaults to relu.
-      dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
-        Defaults to 0.1.
+        attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of
+            attributes of the input is different from the ones of the output.
+            Defaults to None.
+        num_layers (int): Number of decoder layers of the model.
+        d_model (int): Dimension of the model.
+        num_heads (int): Number of heads of the multihead attention layer.
+        dff (int): Number of neurons uses in the first layer of the
+            point wise feed forward network.
+        input_size (int): Size of the input.
+        target_size (int): Size of the output.
+        target_shape (tuple): Shape of the output.
+        pe_input (int): Maximum position encoding for the input.
+        pe_target (int): Maximum position encoding for the target.
+        activation (tf.keras.Loss.Activation/String): Activation function for the
+            point wise feed forward network. Defaults to relu.
+        dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
+            Defaults to 0.1.
     """
 
     def __init__(
@@ -323,12 +323,12 @@ class TransformerModel(tf.keras.Model):
         """Function that calculates the input of the decoder.
 
         Args:
-          X (tf.Tensor): Input tf.Tensor.
-          y (tf.Tensor): Target tf.Tensor.
+            X (tf.Tensor): Input tf.Tensor.
+            y (tf.Tensor): Target tf.Tensor.
 
         Returns:
-          tf.Tensor: Tensor used as input for the decoder
-            with the same shape as the target.
+            tf.Tensor: Tensor used as input for the decoder
+                with the same shape as the target.
         """
         len_tar = y.shape[1]
         if len_tar == 1:
@@ -360,12 +360,12 @@ class TransformerModel(tf.keras.Model):
         """Function that creates the mask.
 
         Args:
-          inp (tf.Tensor): Input tf.Tensor.
-          tar (tf.Tensor): Target tf.Tensor.
+            inp (tf.Tensor): Input tf.Tensor.
+            tar (tf.Tensor): Target tf.Tensor.
 
         Returns:
-          tf.Tensor: Tensor used as mask that indicates which entries should not be
-            used with shape (seq_len,seq_len).
+            tf.Tensor: Tensor used as mask that indicates which entries should not be
+                used with shape (seq_len,seq_len).
         """
         mask = 1 - tf.linalg.band_part(
             tf.ones((tf.shape(tar)[1], tf.shape(tar)[1])), -1, 0
@@ -376,11 +376,11 @@ class TransformerModel(tf.keras.Model):
         """
 
         Args:
-          inps (tuple): Tuple of the input, the mask and the input of the decoder.
-          training (bool): True if the network is in training mode, false if not.
+            inps (tuple): Tuple of the input, the mask and the input of the decoder.
+            training (bool): True if the network is in training mode, false if not.
 
         Returns:
-          tf.Tensor: Output tensor.
+            tf.Tensor: Output tensor.
         """
         x, combined_mask, tar_inp = inps
         seq_len = tf.shape(x)[1]
@@ -399,10 +399,10 @@ class TransformerModel(tf.keras.Model):
         """Function that calculates a train step.
 
         Args:
-          data (tuple): Tuple with the input and the target tf.Tensors.
+            data (tuple): Tuple with the input and the target tf.Tensors.
 
         Returns:
-          dict: Training step metrics.
+            dict: Training step metrics.
         """
         inp, tar = data
         tar = tf.reshape(
@@ -427,10 +427,10 @@ class TransformerModel(tf.keras.Model):
         """Function that calculates a test step.
 
         Args:
-          data (tuple): Tuple of the input and the target tf.Tensors.
+            data (tuple): Tuple of the input and the target tf.Tensors.
 
         Returns:
-          dict: Evaluation step metrics.
+            dict: Evaluation step metrics.
         """
 
         x, tar = data
@@ -461,10 +461,10 @@ class TransformerModel(tf.keras.Model):
         """Function that calculates a prediction step.
 
         Args:
-          data (tf.Tensor): Input.
+            data (tf.Tensor): Input.
 
         Returns:
-          tf.Tensor: Output tensor.
+            tf.Tensor: Output tensor.
         """
         x = data
 
@@ -525,26 +525,26 @@ def Transformer(
         output_size (int): Number of neurons of the last layer.
         loss (tf.keras.Loss): Loss to be use for training.
         optimizer (tf.keras.Optimizer): Optimizer that implements the training algorithm.
-          Use "custom" in order to use a customize optimizer for the transformer model.
+            Use "custom" in order to use a customize optimizer for the transformer model.
         output_shape (tuple): Shape of the output data.
         attribute (list): Ordered list of the indexes of the attributes that we want to predict, if the number of
-          attributes of the input is different from the ones of the output.
-          Defaults to None.
+            attributes of the input is different from the ones of the output.
+            Defaults to None.
         num_heads (int): Number of heads of the attention layer.
-          Defaults to 4.
+            Defaults to 4.
         num_layers (int): Number of decoder and encoder layers. Defaults to 2.
         d_model (int): Number of neurons of the dense layer at the beginning
-          of the encoder and decoder. Defaults to 16.
+            of the encoder and decoder. Defaults to 16.
         dff (int): Number of neurons of the rest of dense layers in the model.
-          Defaults to 64.
+            Defaults to 64.
         pe_input (int): Maximum position encoding for the input.
-          Defaults to 1000.
+            Defaults to 1000.
         pe_output (int): Maximum position encoding for the output.
-          Defaults to 1000.
+            Defaults to 1000.
         dropout_rate (float between 0 and 1): Fraction of the dense units to drop.
-          Defaults to 0.1.
+            Defaults to 0.1.
         activation (tf.keras.Loss.Activation/String): Activation function for the
-          point wise feed forward network. Defaults to "relu".
+            point wise feed forward network. Defaults to "relu".
 
     Returns:
         tf.keras.Model: Transformer model
