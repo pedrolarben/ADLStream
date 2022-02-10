@@ -180,11 +180,15 @@ class DecoderLayer(tf.keras.layers.Layer):
         Returns:
             tf.Tensor: Tensor with shape (batch_size, target_seq_len, d_model)
         """
+        print("Capa decoder: ", x.shape)
+        if len(x.shape) == 4:
+            x = tf.squeeze(x, axis=[1])
+            print("Nuevo array: ", x.shape)
 
         attn1 = self.mha1(x, x, x, look_ahead_mask)
         attn1 = self.dropout1(attn1, training=training)
+        # print(attn1.shape)
         out1 = self.layernorm1(attn1 + x)
-
         attn2 = self.mha2(enc_output, enc_output, out1, None)
         attn2 = self.dropout2(attn2, training=training)
         out2 = self.layernorm2(attn2 + out1)
@@ -473,6 +477,8 @@ class TransformerModel(tf.keras.Model):
         if self.attribute != None:
             tar_inp = tf.gather(x, [self.attribute], axis=-1)
             tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
+            tar_inp = tf.squeeze(tar_inp, axis=[1])
+            print("Salida test: ", tar_inp.shape)
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -567,7 +573,14 @@ def Transformer(
         optimizer = tf.keras.optimizers.Adam(
             learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9
         )
-
+    print("\n")
+    print("\n")
+    print("\n")
+    print("Entrada: ", input_shape)
+    print("Salida: ", output_shape)
+    print("\n")
+    print("\n")
+    print("\n")
     att_inp = input_shape[-1]
     att_out = output_shape[-1]
 
@@ -575,6 +588,8 @@ def Transformer(
     inp = np.arange(inp_len * att_inp).reshape((1, inp_len, att_inp))
     tar_inp = np.arange(output_size).reshape((1, output_shape[0], att_out))
 
+    print("Llamada al modelo 1: ", inp.shape)
+    print("Llamada al modelo 2: ", tar_inp.shape)
     # First call to the model, in order to initialize the weights of the model, with arbitrary data.
     model.compile(optimizer=optimizer, loss=loss)
     model.call((inp, None, tar_inp), False)
