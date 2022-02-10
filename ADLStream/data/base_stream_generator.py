@@ -1,6 +1,7 @@
 """Implements an abstract object representing a Stream Generator."""
 
 from abc import ABC, abstractmethod
+from typing import List, Tuple, Type
 
 
 class BaseStreamGenerator(ABC):
@@ -26,9 +27,9 @@ class BaseStreamGenerator(ABC):
     ```
 
     Arguments:
-        stream (inherits ADLStream.data.stream.BaseStream):
+        stream (inherits [BaseStream]):
             Stream source to be feed to the ADLStream framework.
-        preprocessing_steps (list of ADLStream.data.preprocessing.BasePreprocessor):
+        preprocessing_steps (list of BasePreprocessor):
             List of operations to be perform sequentially over the input data (x).
             Defaults to [].
         max_instances (int > 0): Max number of instance to generate.  If None, it will
@@ -36,27 +37,50 @@ class BaseStreamGenerator(ABC):
             Defaults to None.
     """
 
-    def __init__(self, stream, preprocessing_steps=[], max_instances=None):
+    def __init__(
+        self,
+        stream: Type["BaseStream"],
+        preprocessing_steps: List[Type["BasePreprocessor"]] = [],
+        max_instances: int = None,
+    ) -> None:
         self.stream = stream
         self.num_messages = 0
         self.preprocessing_steps = preprocessing_steps
         self.max_messages = max_instances
 
     @property
-    def num_messages(self):
+    def num_messages(self) -> int:
+        """Return number of messages processed from the stream.
+
+        Returns:
+            int: number of messages.
+        """
         return self._num_messages
 
     @num_messages.setter
-    def num_messages(self, value):
+    def num_messages(self, value: int) -> None:
         self._num_messages = value
 
     def _check_number_instances(self):
+        """Stop when it reaches the maximum number of messages.
+
+        Raises:
+            StopIteration:
+        """
         if self.max_messages is not None:
             if self.num_messages >= self.max_messages:
                 self.stream.stop()
                 raise StopIteration
 
-    def next(self, context):
+    def next(self, context: "ADLStreamContext") -> List[float]:
+        """Get the next message from the stream.
+
+        Args:
+            context (ADLStreamContext): ADLStream shared object. Used for logging.
+
+        Returns:
+            List[float]: new message.
+        """
         message = None
         try:
             self._check_number_instances()
@@ -76,7 +100,7 @@ class BaseStreamGenerator(ABC):
         return message
 
     @abstractmethod
-    def preprocess(self, message):
+    def preprocess(self, message: List[float]) -> Tuple[List[float], List[float]]:
         """The function that contains the logic to transform a stream message into
         model imput and target data `(x ,y)`.
 
@@ -101,12 +125,20 @@ class BaseStreamGenerator(ABC):
         """
         raise NotImplementedError("Abstract method")
 
-    def _perform_preprocessing_steps(self, x):
+    def _perform_preprocessing_steps(self, x: List[float]) -> List[float]:
+        """Apply the different preprocessors to a message.
+
+        Args:
+            x (List[float]): message.
+
+        Returns:
+            List[float]: updated message.
+        """
         for preprocessor in self.preprocessing_steps:
             x = preprocessor.learn_one(x).transform_one(x)
         return x
 
-    def run(self, context):
+    def run(self, context: "ADLStreamContext"):
         """The function that sends data to ADLStream framework
 
         It gets messages from the stream, preprocesses them and sends to the specific

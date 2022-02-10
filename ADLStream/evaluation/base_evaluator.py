@@ -130,8 +130,7 @@ class BaseEvaluator(ABC):
             NotImplementedError: This is an abstract method which should be implemented.
 
         Returns:
-            new_metrics (list)
-            instances(list)
+            tuple[list, list]: new_metrics (list), instances(list)
         """
         raise NotImplementedError("Abstract method")
 
@@ -159,7 +158,7 @@ class BaseEvaluator(ABC):
         """Gets new predictions from ADLStream context
 
         Args:
-            context (ADLStreamContext)
+            context (ADLStreamContext): ADLStream context
         """
         x, y, o = context.get_predictions()
         self.x_eval += x
@@ -174,7 +173,7 @@ class BaseEvaluator(ABC):
         file and result plot.
 
         Args:
-            context (ADLStreamContext)
+            context (ADLStreamContext): ADLStream context
         """
         self.start()
         while not context.is_finished():
