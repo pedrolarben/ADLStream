@@ -37,7 +37,7 @@ def _test_moving_window(
 
 
 def test_one_variable():
-    data = [x for x in range(10)]
+    data = [x for x in range(1, 10)]
     expected_X = [
         [1, 2, 3, 4],
         [2, 3, 4, 5],
@@ -52,7 +52,7 @@ def test_one_variable():
 
 
 def test_multivariable_variable():
-    data = [[x, x] for x in range(10)]
+    data = [[x, x] for x in range(1, 10)]
     expected_X = [
         [[1, 1], [2, 2], [3, 3], [4, 4]],
         [[2, 2], [3, 3], [4, 4], [5, 5]],
@@ -72,7 +72,7 @@ def test_multivariable_variable():
 
 
 def test_multivariable_variable_one_input():
-    data = [[x, x + 1] for x in range(10)]
+    data = [[x, x + 1] for x in range(1, 10)]
     expected_X = [
         [[1], [2], [3], [4]],
         [[2], [3], [4], [5]],
@@ -91,7 +91,7 @@ def test_multivariable_variable_one_input():
 
 
 def test_multivariable_variable_one_output():
-    data = [[x, x + 1] for x in range(10)]
+    data = [[x, x + 1] for x in range(1, 10)]
     expected_X = [
         [[1, 2], [2, 3], [3, 4], [4, 5]],
         [[2, 3], [3, 4], [4, 5], [5, 6]],
@@ -105,7 +105,7 @@ def test_multivariable_variable_one_output():
 
 
 def test_shift_one_variable():
-    data = [[x, x] for x in range(10)]
+    data = [x for x in range(1, 10)]
     expected_X = [
         [1, 2, 3, 4],
         [2, 3, 4, 5],
@@ -119,7 +119,7 @@ def test_shift_one_variable():
 
 
 def test_shift_multivariable():
-    data = [[x, x + 1] for x in range(10)]
+    data = [[x, x + 1] for x in range(1, 10)]
     expected_X = [
         [[1, 2], [2, 3], [3, 4], [4, 5]],
         [[2, 3], [3, 4], [4, 5], [5, 6]],
@@ -133,7 +133,7 @@ def test_shift_multivariable():
 
 
 def test_shift_multivariable_one_output():
-    data = [[x, x + 1] for x in range(10)]
+    data = [[x, x + 1] for x in range(1, 10)]
     expected_X = [
         [[1, 2], [2, 3], [3, 4], [4, 5]],
         [[2, 3], [3, 4], [4, 5], [5, 6]],
