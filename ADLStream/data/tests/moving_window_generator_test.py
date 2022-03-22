@@ -2,6 +2,7 @@
 
 import pytest
 
+from ADLStream.data import MovingWindowStreamGenerator
 from ADLStream.data.stream import DataStream
 from ADLStream.utils import test_utils
 
@@ -17,7 +18,7 @@ def _test_moving_window(
     target_idx=None,
 ):
     stream = DataStream(data)
-    generator = ADLStream.data.MovingWindowStreamGenerator(
+    generator = MovingWindowStreamGenerator(
         stream=stream,
         past_history=past_history,
         forecasting_horizon=forecasting_horizont,
