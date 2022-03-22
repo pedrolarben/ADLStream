@@ -23,8 +23,8 @@ def _test_moving_window(
         past_history=past_history,
         forecasting_horizon=forecasting_horizont,
         shift=shift,
-        input_idx=0,
-        target_idx=0,
+        input_idx=input_idx,
+        target_idx=target_idx,
     )
     context = test_utils.FakeContext()
 
