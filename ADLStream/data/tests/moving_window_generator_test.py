@@ -1,6 +1,5 @@
-"""Tests for MinMax scaler preprocessor."""
+"""Tests for the moving window generator."""
 
-import pytest
 
 from ADLStream.data import MovingWindowStreamGenerator
 from ADLStream.data.stream import DataStream
