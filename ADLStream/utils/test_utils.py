@@ -18,8 +18,10 @@ class FakeContext:
         pass
 
     def add(self, x, y):
-        self.X.append(x)
-        self.y.append(y)
+        if x is not None:
+            self.X.append(x)
+        if y is not None:
+            self.y.append(y)
 
 
 class SimpleTestGenerator(BaseStreamGenerator):
