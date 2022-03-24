@@ -473,7 +473,7 @@ class TransformerModel(tf.keras.Model):
         if self.attribute != None:
             tar_inp = tf.gather(x, [self.attribute], axis=-1)
             tar_inp = tf.gather(tar_inp, [tar_inp.shape[1] - 1], axis=1)
-            tar_inp = tf.squeeze(tar_inp, axis = [1])
+            tar_inp = tf.squeeze(tar_inp, axis=[1])
 
         for i in range(self.target_shape[0]):
             output = self((x, combined_mask, tar_inp), False)
@@ -481,7 +481,7 @@ class TransformerModel(tf.keras.Model):
             if i != self.target_shape[0] - 1:
                 output = tf.gather(output, [output.shape[1] - 1], axis=1)
                 tar_inp = tf.concat([tar_inp, output], axis=1)
-        output = tf.squeeze(output, axis = [2])
+        output = tf.squeeze(output, axis=[2])
         return output
 
 
