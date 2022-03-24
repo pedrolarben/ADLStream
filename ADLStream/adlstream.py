@@ -1,20 +1,18 @@
 """Implements the main logic of ADLStream framework."""
 
+import numpy as np
 import logging
 from multiprocessing import Process, Lock
 from multiprocessing.managers import BaseManager
-import numpy as np
+from typing import Callable, ContextManager, List, Optional, Tuple, Type, Union
 
 
 class ADLStreamContext:
     """ADLStream context.
-
     This object is shared among training, predicting, stream-generator and validator processes.
-
     It is used to send the data from the stream generator to the predicting process,
     then it is used for training and finally the validator has access to the output predictions.
-
-    Argumennts:
+    Parameters:
         batch_size (int): Number of instances per batch.
         num_batches_fed (int): Maximun number of batches to be used for training.
         log_file (str, optional): Name of log file.
@@ -26,10 +24,10 @@ class ADLStreamContext:
 
     def __init__(
         self,
-        batch_size,
-        num_batches_fed,
-        log_file=None,
-    ):
+        batch_size: int,
+        num_batches_fed: int,
+        log_file: Optional[str] = None,
+    ) -> None:
 
         self.batch_size = batch_size
         self.num_batches_fed = num_batches_fed
@@ -56,7 +54,7 @@ class ADLStreamContext:
 
         self._configure_logging(log_file)
 
-    def _configure_logging(self, log_file):
+    def _configure_logging(self, log_file: str) -> None:
         if log_file is not None:
             with open(log_file, "w"):
                 pass
@@ -66,7 +64,20 @@ class ADLStreamContext:
                 level=logging.DEBUG,
             )
 
-    def log(self, level, message):
+    def log(
+        self,
+        level: str,
+        message: str,
+    ) -> None:
+        """Log message.
+
+        Args:
+            level (str): Log level - "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
+            message (str): Logging message.
+
+        Raises:
+            Exception: Level is not valid.
+        """
         if level == "DEBUG":
             logging.debug(message)
         elif level == "INFO":
@@ -80,43 +91,112 @@ class ADLStreamContext:
         else:
             raise Exception("{} is not a valid logging level".format(level))
 
-    def get_batch_size(self):
+    def get_batch_size(self) -> int:
+        """Get the batch size.
+
+        Returns:
+            int: Batch size.
+        """
         return self.batch_size
 
-    def get_num_batches_fed(self):
+    def get_num_batches_fed(self) -> int:
+        """Get the number of batches to fed for training.
+
+        Returns:
+            int: Number of batches to fed.
+        """
         return self.num_batches_fed
 
-    def set_time_out(self, time_out=True):
+    def set_time_out(self, time_out: bool = True) -> None:
+        """Set time out to true by the stream generator.
+
+        Args:
+            time_out (bool, optional): Whether is time out. Defaults to True.
+        """
         self.time_out = time_out
 
-    def is_time_out(self):
+    def is_time_out(self) -> bool:
+        """Whether the stream has timed out.
+
+        Returns:
+            bool: Time out.
+        """
         return self.time_out
 
-    def set_finished(self, finished=True):
+    def set_finished(self, finished: bool = True) -> None:
+        """Indicate that the stream has finished.
+
+        Args:
+            finished (bool, optional): Whether the stream has finished. Defaults to True.
+        """
         self.finished = finished
 
-    def is_finished(self):
+    def is_finished(self) -> bool:
+        """Whether the stream has finished or not.
+
+        Returns:
+            bool: True if the stream has finished.
+        """
         return self.finished
 
-    def set_new_model_available(self, new_model_available):
+    def set_new_model_available(self, new_model_available: bool) -> None:
+        """Indicate that there are new weights available for the model.
+
+        Args:
+            new_model_available (bool): True if there is a new model. False otherwise.
+        """
         self.new_model_available = new_model_available
 
-    def is_new_model_available(self):
+    def is_new_model_available(self) -> bool:
+        """Whether there are updated weights available for the model.
+
+        Returns:
+            bool: True if there is a new model.
+        """
         return self.new_model_available
 
-    def get_output_size(self):
+    def get_output_size(self) -> int:
+        """Get output size of the model (number of neurons of the last layer).
+
+        Returns:
+            int: output size.
+        """
         return self.output_size
 
-    def set_output_size(self, output_size):
+    def set_output_size(self, output_size: int) -> None:
+        """Indicate the number of features of the output.
+
+        Args:
+            output_size (int): output size.
+        """
         self.output_size = output_size
 
-    def set_weights(self, w):
+    def set_weights(self, w: List[np.ndarray]) -> None:
+        """Update the model's weigths.
+
+        Args:
+            w (List[np.ndarray]): model's weights.
+        """
         self.weights = w
 
-    def get_weights(self):
+    def get_weights(self) -> List[np.ndarray]:
+        """Get the most updated model's weights.
+
+        Returns:
+            List[np.ndarray]: model's weights.
+        """
         return self.weights
 
-    def add(self, x, y=None):
+    def add(self, x: List[float], y: Optional[List[float]] = None):
+        """Add a new instance from the stream.
+        The instances will be added to the prediction buffer. The inputs (x) and outputs (y)
+        do not need to arrive at the same time. However they have to arrive in the same order.
+        So that the first output (y_0) corresponds to the first input (x_0).
+
+        Args:
+            x (List[float]): input instance of the model.
+            y (List[float], optional): output intance of the model. Defaults to None.
+        """
         with self.data_lock:
             if x is not None:
                 if len(self.x_train) < self.batch_size:
@@ -133,7 +213,13 @@ class ADLStreamContext:
                 else:
                     self.y_test.append(y)
 
-    def get_test_data(self):
+    def get_test_data(self) -> List[List[float]]:
+        """Get the test data (prediction). Once the test data is provided to the
+        prediction process, the data is added to the training buffer.
+
+        Returns:
+            List[List[float]]: X_test -- model's input.
+        """
         X, y = [], []
         with self.data_lock:
             X = self.x_test
@@ -146,10 +232,23 @@ class ADLStreamContext:
                 self.x_eval += X
         return X
 
-    def get_remaining_test(self):
+    def get_remaining_test(self) -> int:
+        """Get length of the test buffer.
+
+        Returns:
+            int: length of test buffer.
+        """
         return len(self.x_test)
 
-    def get_training_data(self):
+    def get_training_data(self) -> Tuple[List[List[float]], List[List[float]]]:
+        """Get data for training the model.
+        Returns a tuple with two lists such as (X_train, y_train). The length of both lists, is
+        given by `min(len(y_train), batch_size*num_batches_fed)`. If the training buffer has more
+        instance than the maximun (`batch_size*num_batches_fed`), it returns the newest instances.
+
+        Returns:
+            (List[List[float]], List[List[float]]): X_train, y_train
+        """
         X, y = [], []
 
         with self.data_lock:
@@ -166,7 +265,14 @@ class ADLStreamContext:
 
         return X[: len(self.y_train)], y
 
-    def get_predictions(self):
+    def get_predictions(
+        self,
+    ) -> Tuple[List[List[float]], List[List[float]], List[List[float]]]:
+        """Returns the input instances (x), expected output (y) and models predictions(o).
+
+        Returns:
+            (List[List[float]], List[List[float]], List[List[float]]): (x, y, o)
+        """
         with self.eval_lock:
             x_eval, self.x_eval = self.x_eval, []
             y_eval, self.y_eval = self.y_eval, []
@@ -181,9 +287,12 @@ class ADLStreamContext:
 
 class ADLStreamManager(BaseManager):
     """ADLStream Manager
-
     Manager server which hold ADLStreamContext object.
     It allows other processes to manipulate the shared context.
+
+    ```
+    self.register("context", ADLStreamContext)
+    ```
     """
 
     def __init__(self):
@@ -193,12 +302,10 @@ class ADLStreamManager(BaseManager):
 
 class ADLStream:
     """ADLStream.
-
     This is the main object of the framework.
     Based on a stream generator and a given deep learning model, it runs the training and
     predicting process in paralell (ideally in two different GPU) to obtain obtain accurate
     predictions as soon as an instance is received.
-
     Parameters:
         stream_generator (ADLStream.data.BaseStreamGenerator):
             It is in charge of generating new instances from the stream.
@@ -225,23 +332,22 @@ class ADLStream:
             If log_file is given, log level is set to "DEBUG". However if None,
             log level is kept as default.
             Defaults to None.
-
     """
 
     def __init__(
         self,
-        stream_generator,
-        evaluator,
-        batch_size,
-        num_batches_fed,
-        model_architecture,
-        model_loss,
-        model_optimizer="adam",
-        model_parameters={},
-        train_gpu_index=0,
-        predict_gpu_index=1,
-        log_file=None,
-    ):
+        stream_generator: Type["BaseStreamGenerator"],
+        evaluator: Type["BaseEvaluator"],
+        batch_size: int,
+        num_batches_fed: int,
+        model_architecture: str,
+        model_loss: Union[str, Callable],
+        model_optimizer: str = "adam",
+        model_parameters: dict = {},
+        train_gpu_index: int = 0,
+        predict_gpu_index: int = 1,
+        log_file: Optional[str] = None,
+    ) -> None:
         self.stream_generator = stream_generator
         self.evaluator = evaluator
         self.batch_size = batch_size
@@ -254,11 +360,14 @@ class ADLStream:
         self.predict_gpu_index = predict_gpu_index
         self.log_file = log_file
 
+        self.x_shape = None
+        self.output_size = None
+        self.weights = None
+
         self.manager = ADLStreamManager()
 
-    def training_process(self, context, gpu_index):
+    def training_process(self, context: ADLStreamContext, gpu_index: int) -> None:
         """Training process.
-
         Args:
             context (ADLStreamContext): Shared object among processes.
             gpu_index (int): Index of the GPU to use for training
@@ -308,6 +417,7 @@ class ADLStream:
                     self.model_optimizer,
                     **self.model_parameters
                 )
+                self.x_shape = X.shape
 
             y = y.reshape((y.shape[0], context.get_output_size()))
 
@@ -324,9 +434,8 @@ class ADLStream:
 
         context.log("INFO", "TRAINING-PROCESS - Finished stream")
 
-    def predicting_process(self, context, gpu_index):
+    def predicting_process(self, context: ContextManager, gpu_index: int) -> None:
         """Predicting process.
-
         Args:
             context (ADLStreamContext): Shared object among processes.
             gpu_index (int): Index of the GPU to use for training
@@ -400,11 +509,9 @@ class ADLStream:
 
             context.add_predictions(predictions)
 
-    def run(self):
+    def run(self) -> None:
         """Function that run ADLStream.
-
         It run 4 different processes:
-
         - Training process.
         - Predicting process.
         - Stream generator process.
@@ -437,4 +544,27 @@ class ADLStream:
         process_predict.join()
         process_evaluator.join()
 
+        self.x_shape = context.get_shape()
+        self.output_size = context.get_output_size()
+        self.weights = context.get_weights()
+
         self.manager.shutdown()
+
+    def get_model(self) -> object:
+        """Returns model with the latest weights.
+
+        Returns:
+            tf.model: Model.
+        """
+        from ADLStream.models import create_model
+
+        model = create_model(
+            self.model_architecture,
+            self.x_shape,
+            self.output_size,
+            self.model_loss,
+            self.model_optimizer,
+            **self.model_parameters
+        )
+        model.set_weights(self.weights)
+        return model

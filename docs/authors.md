@@ -1,3 +1,7 @@
+---
+hide:
+  - toc
+---
 # Authors 
 * **Pedro Lara-Benítez** - [<i class="ai ai-google-scholar ai-1.5x"></i>](https://scholar.google.co.uk/citations?user=vrWKUgcAAAAJ) | [<i class="fab fa-linkedin-in"></i>](https://www.linkedin.com/in/pedrolarben)
 * **Manuel Carranza-García** - [<i class="ai ai-google-scholar"></i>](https://scholar.google.co.uk/citations?user=fP970oEAAAAJ) | [<i class="fab fa-linkedin-in"></i>](https://www.linkedin.com/in/manuelcarranzagarcia/)
