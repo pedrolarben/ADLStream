@@ -103,12 +103,12 @@ class MovingWindowStreamGenerator(BaseStreamGenerator):
         if self.num_messages >= self.past_history + self.shift:
             self.y_window.append(self._get_y(message))
 
-        if len(self.x_window) > self.past_history:
+        if len(self.x_window) == self.past_history:
+            x = self.x_window.copy()
             self.x_window.pop(0)
-            x = self.x_window
 
-        if len(self.y_window) > self.forecasting_horizon:
+        if len(self.y_window) == self.forecasting_horizon:
+            y = self.y_window.copy()
             self.y_window.pop(0)
-            y = self.y_window
 
         return x, y
