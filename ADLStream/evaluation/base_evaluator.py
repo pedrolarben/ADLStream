@@ -114,8 +114,10 @@ class BaseEvaluator(ABC):
             self.results_file = open(self.results_file, "a")
 
     def end(self):
-        self.predictions_file.close()
-        self.results_file.close()
+        if self.predictions_file is not None:
+            self.predictions_file.close()
+        if self.results_file is not None:
+            self.results_file.close()
 
     @abstractmethod
     def evaluate(self):
