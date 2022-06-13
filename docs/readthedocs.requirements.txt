@@ -1,5 +1,5 @@
 mkdocs-material
-mkdocstrings
+mkdocstrings==0.17.0
 pymdown-extensions
 numpy
 tensorflow>=2.1.0
