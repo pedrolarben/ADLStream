@@ -26,7 +26,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with Black
       run: |
-        black . --check
+        if matrix.python-version > 3.6; then black . --check; fi
     - name: Run unittests
       run: |
         python -m pytest
