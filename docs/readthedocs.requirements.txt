@@ -1,7 +1,7 @@
 mkdocs-material
 mkdocstrings==0.17.0
 pymdown-extensions
-Jinja2==2.11.2
+Jinja2==3.1.3
 numpy
 tensorflow>=2.1.0
 tensorflow-addons>=0.11.0
